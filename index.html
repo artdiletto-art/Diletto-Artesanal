@@ -1,0 +1,1862 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Diletto Artesanal · Gestión interna</title>
+  <meta name="description" content="Panel de gestión interna de Diletto Artesanal: abarrotes, costos de producción, ventas, historial y precios de carta.">
+  <meta name="theme-color" content="#173F33">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23173F33'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='21' font-style='italic' text-anchor='middle' fill='%23fff'%3ED%3C/text%3E%3C/svg%3E">
+  <style>
+/* Diletto Artesanal · panel de gestión
+   Paleta: pino profundo (identidad), papel verdoso (fondo), tomate y ámbar solo para alertas. */
+:root {
+  --papel: #F2F5F3;
+  --superficie: #FFFFFF;
+  --tinta: #1C2A26;
+  --tinta-2: #4A5B56;
+  --tinta-3: #73847E;
+  --borde: #D9E0DC;
+  --borde-suave: #E8EDEA;
+  --pino: #1D5B47;
+  --pino-osc: #173F33;
+  --pino-tinte: #E2EEE8;
+  --tomate: #B0402D;
+  --tomate-tinte: #F8E7E3;
+  --ambar: #8F5E10;
+  --ambar-tinte: #F9EFD9;
+  --f-titulo: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --f-ui: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --r1: 6px; --r2: 10px; --r3: 14px;
+  --lateral: 248px;
+  --pad: 32px;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--papel); color: var(--tinta); font: 400 15px/1.5 var(--f-ui); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4, h5, p { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--pino); outline-offset: 2px; }
+.oculto { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.salto { position: absolute; left: -999px; top: 8px; background: var(--superficie); padding: 8px 12px; border-radius: var(--r1); z-index: 100; }
+.salto:focus { left: 8px; }
+.tenue { color: var(--tinta-3); }
+.chico { font-size: 12.5px; }
+.fuerte { font-weight: 600; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.centro { text-align: center; }
+.espacio { flex: 1; }
+
+/* ---------- Estructura ---------- */
+.app { display: grid; grid-template-columns: var(--lateral) minmax(0, 1fr); min-height: 100vh; }
+.lateral { background: var(--pino-osc); color: #E9F1EC; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 28px 16px 20px; }
+.marca { padding: 0 12px 28px; display: flex; flex-direction: column; line-height: 1; }
+.marca-nombre { font: italic 400 34px/1 var(--f-titulo); letter-spacing: -.01em; color: #fff; }
+.marca-sub { margin-top: 6px; font: 500 13px/1 var(--f-ui); letter-spacing: .12em; color: #A9C4B8; }
+.menu { display: flex; flex-direction: column; gap: 4px; }
+.menu-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: transparent; border: 0; border-radius: var(--r2); padding: 11px 12px; color: #C6D9CF; transition: background .18s, color .18s; }
+.menu-item:hover { background: rgba(255, 255, 255, .07); color: #fff; }
+.menu-item.activo { background: #fff; color: var(--pino-osc); font-weight: 600; }
+.menu-item:focus-visible { outline-color: #fff; }
+.menu-ico { display: inline-flex; flex: none; }
+.lateral-pie { margin-top: auto; padding: 0 12px; font-size: 12.5px; color: #93B1A3; }
+.estado.error { color: #F3B4A8; }
+
+.principal { min-width: 0; padding: 0 var(--pad) 64px; }
+.cabecera { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding: 32px 0 20px; }
+.cabecera-titulo h1 { font: 500 34px/1.1 var(--f-titulo); letter-spacing: -.01em; }
+.cabecera-titulo p { margin-top: 8px; max-width: 62ch; color: var(--tinta-2); }
+.cabecera-acciones { display: flex; align-items: center; gap: 10px; flex: none; }
+.acciones-vista { display: flex; gap: 10px; }
+.respaldo { position: relative; }
+.popover { position: absolute; right: 0; top: calc(100% + 6px); min-width: 250px; background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--r2); padding: 6px; z-index: 30; box-shadow: 0 8px 24px rgba(23, 63, 51, .14); }
+.popover button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 10px 12px; border-radius: var(--r1); }
+.popover button:hover { background: var(--papel); }
+.popover .peligro { color: var(--tomate); }
+.vista { outline: none; display: flex; flex-direction: column; gap: 20px; }
+.vista.entra > * { animation: entra .26s var(--ease) both; }
+@keyframes entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Botones y campos ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 16px; border: 1px solid var(--borde); background: var(--superficie); border-radius: var(--r1); font-weight: 500; white-space: nowrap; transition: background .15s, border-color .15s; }
+.btn:hover { background: var(--papel); border-color: #C5CFCA; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primario { background: var(--pino); border-color: var(--pino); color: #fff; }
+.btn-primario:hover { background: var(--pino-osc); border-color: var(--pino-osc); }
+.btn-suave { background: transparent; border-color: transparent; color: var(--pino); padding-inline: 10px; }
+.btn-suave:hover { background: var(--pino-tinte); border-color: transparent; }
+.btn-peligro { background: var(--tomate); border-color: var(--tomate); color: #fff; }
+.btn-peligro:hover { background: #953523; }
+.btn-peligro-suave { color: var(--tomate); }
+.btn-icono { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex: none; background: transparent; border: 1px solid transparent; border-radius: var(--r1); color: var(--tinta-2); }
+.btn-icono:hover { background: var(--pino-tinte); color: var(--pino); }
+.btn-icono.borrar:hover { background: var(--tomate-tinte); color: var(--tomate); }
+.respaldo .btn-icono { border-color: var(--borde); background: var(--superficie); }
+
+.celda { width: 100%; min-width: 0; height: 36px; padding: 4px 8px; background: transparent; border: 1px solid transparent; border-radius: var(--r1); transition: border-color .12s, background .12s; }
+.celda:hover { border-color: var(--borde); }
+.celda:focus { outline: none; border-color: var(--pino); background: #fff; box-shadow: 0 0 0 3px rgba(29, 91, 71, .14); }
+.celda.num { text-align: right; font-variant-numeric: tabular-nums; }
+.celda::placeholder { color: #B3BFBA; }
+select.celda { padding-right: 4px; cursor: pointer; }
+input[type=date].celda { width: auto; border-color: var(--borde); background: #fff; }
+.buscar { height: 40px; min-width: 240px; padding: 0 12px; border: 1px solid var(--borde); border-radius: var(--r1); background: #fff; }
+.buscar:focus { outline: none; border-color: var(--pino); box-shadow: 0 0 0 3px rgba(29, 91, 71, .14); }
+.check { display: inline-flex; align-items: center; gap: 8px; color: var(--tinta-2); cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--pino); }
+.rinde { display: inline-flex; align-items: center; gap: 8px; color: var(--tinta-2); }
+.rinde .celda { width: 84px; border-color: var(--borde); background: #fff; }
+.sufijo { color: var(--tinta-3); font-size: 12.5px; white-space: nowrap; }
+.con-sufijo { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.con-sufijo .celda { width: 84px; }
+.chip-toggle { min-width: 46px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--borde); background: #fff; color: var(--tinta-3); font-size: 13px; font-weight: 500; }
+.chip-toggle[aria-pressed=true] { background: var(--pino-tinte); border-color: transparent; color: var(--pino); }
+.chip-toggle[aria-pressed=false] { background: var(--ambar-tinte); border-color: transparent; color: var(--ambar); }
+
+/* ---------- Pastillas, segmentos, banda ---------- */
+.familias { display: flex; flex-wrap: wrap; gap: 8px 28px; }
+.fam-grupo { display: flex; flex-direction: column; gap: 6px; }
+.fam-grupo-nombre { font-size: 12.5px; color: var(--tinta-3); }
+.fam-lista { display: flex; flex-wrap: wrap; gap: 6px; }
+.pildora { height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--borde); background: var(--superficie); color: var(--tinta-2); transition: background .15s, color .15s; }
+.pildora:hover { border-color: #B9C5BF; }
+.pildora.activa { background: var(--pino); border-color: var(--pino); color: #fff; }
+.segmentos { display: inline-flex; padding: 3px; gap: 2px; background: #E6ECE9; border-radius: var(--r1); }
+.segmento { height: 34px; padding: 0 14px; border: 0; background: transparent; border-radius: 4px; color: var(--tinta-2); font-weight: 500; }
+.segmento.activo { background: #fff; color: var(--pino-osc); box-shadow: 0 1px 2px rgba(23, 63, 51, .18); }
+.segmentos-chico .segmento { height: 28px; padding: 0 10px; font-size: 13px; }
+.banda { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--r2); }
+.banda-item { display: flex; flex-direction: column; gap: 4px; padding: 16px 20px; border-left: 1px solid var(--borde-suave); min-width: 0; }
+.banda-item:first-child { border-left: 0; }
+.banda-etiqueta { font-size: 13px; color: var(--tinta-3); }
+.banda-valor { font: 500 26px/1.15 var(--f-titulo); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.banda-item.atencion .banda-valor { color: var(--ambar); }
+.banda-item.destacado { background: var(--pino-tinte); }
+.banda-item.destacado .banda-valor { color: var(--pino-osc); }
+.banda-grande .banda-valor { font-size: 30px; }
+.barra { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+.barra-pie { padding-top: 12px; }
+
+/* ---------- Tarjetas y tablas ---------- */
+.tarjeta { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--r2); padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.tarjeta-cab h2 { font: 500 22px/1.2 var(--f-titulo); }
+.tarjeta-cab p { margin-top: 4px; color: var(--tinta-2); font-size: 14px; max-width: 70ch; }
+.subtitulo { font: 500 18px/1.2 var(--f-titulo); margin-top: 8px; }
+.tabla-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tabla th, .tabla td { padding: 6px 10px; border-bottom: 1px solid var(--borde-suave); vertical-align: middle; text-align: left; }
+.tabla th.num, .tabla td.num { text-align: right; }
+.tabla thead th { font-size: 12.5px; font-weight: 500; color: var(--tinta-3); border-bottom: 1px solid var(--borde); white-space: nowrap; padding-block: 8px; }
+.tabla tbody tr:hover { background: #F8FAF9; }
+.tabla tfoot td { border-bottom: 0; }
+.tabla-compacta th, .tabla-compacta td { padding: 4px 8px; }
+.tabla .acciones { width: 44px; text-align: right; padding-inline: 2px; }
+.tabla .acciones .btn-icono { width: 34px; height: 34px; opacity: .55; }
+.tabla tr:hover .acciones .btn-icono, .tabla .acciones .btn-icono:focus-visible { opacity: 1; }
+.tabla tr.total td { font-weight: 600; border-top: 1px solid var(--borde); background: #F8FAF9; }
+.tabla tr.subtotal td { color: var(--tinta-2); font-size: 13px; background: #F8FAF9; }
+.tabla tr.seccion td { font-weight: 600; color: var(--pino); background: var(--pino-tinte); padding-block: 6px; }
+.col-nombre { min-width: 200px; }
+.nombre-fijo { padding: 0 8px; color: var(--tinta-2); font-style: italic; }
+.tabla-insumos { min-width: 980px; }
+.falta { color: var(--tomate); font-weight: 500; }
+td.num.falta, span.falta { background: var(--tomate-tinte); padding: 2px 8px; border-radius: 999px; font-size: 12.5px; }
+.insignia { display: inline-block; min-width: 58px; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; }
+.m-ok { background: var(--pino-tinte); color: var(--pino-osc); }
+.m-bajo { background: var(--ambar-tinte); color: var(--ambar); }
+.m-neg { background: var(--tomate-tinte); color: var(--tomate); }
+.m-nulo { background: #EEF1EF; color: var(--tinta-3); }
+.nota { color: var(--tinta-3); font-size: 13px; max-width: 80ch; }
+.nota-alta { color: var(--tinta-2); }
+.vacio { padding: 28px 12px; text-align: center; color: var(--tinta-2); }
+.vacio-titulo { font: 500 19px/1.3 var(--f-titulo); color: var(--tinta); }
+.vacio-texto { margin-top: 4px; }
+.etiqueta { display: inline-block; margin-top: 2px; font-size: 12.5px; color: var(--tinta-3); }
+.etiqueta-semanal { color: var(--ambar); background: var(--ambar-tinte); padding: 0 8px; border-radius: 999px; margin: 0; }
+
+/* Bloques de receta */
+.rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr)); gap: 16px; align-items: start; }
+.rejilla-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.bloque { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--r2); padding: 16px 16px 8px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.bloque-empaque { background: #FBFCFB; }
+.bloque-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.bloque-cab h3 { font: 500 18px/1.25 var(--f-titulo); }
+.bloque-pie { padding: 4px 0 8px; }
+
+/* Matriz de pizzas */
+.matriz { border: 1px solid var(--borde-suave); border-radius: var(--r1); }
+.tabla-matriz { min-width: max-content; }
+.tabla-matriz th.ing { min-width: 74px; max-width: 92px; white-space: normal; line-height: 1.2; vertical-align: bottom; }
+.tabla-matriz td.ing { padding: 2px 4px; }
+.tabla-matriz td.ing .celda { width: 68px; padding-inline: 6px; }
+.tabla-matriz th.derivada, .tabla-matriz td.derivada { white-space: nowrap; background: #F8FAF9; }
+.tabla-matriz .pegado { position: sticky; left: 0; background: var(--superficie); z-index: 2; min-width: 150px; font-weight: 500; border-right: 1px solid var(--borde-suave); }
+.tabla-matriz thead .pegado { background: var(--superficie); }
+.tabla-precios th[scope=row] { font-weight: 500; }
+.celda-precio { min-width: 130px; }
+.celda-precio .celda { width: 96px; }
+.celda-precio .insignia { display: block; margin: 2px 0 0 auto; width: fit-content; min-width: 0; }
+.fila-sep th, .fila-sep td { border-top: 1px solid var(--borde); }
+
+/* ---------- Ventas ---------- */
+.ventas-cuerpo { display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.catalogo-lista { max-height: 520px; overflow-y: auto; padding-right: 4px; }
+.catalogo-fam { font: 500 17px/1.2 var(--f-titulo); margin: 14px 0 6px; }
+.catalogo-fam:first-child { margin-top: 0; }
+.catalogo-sec { font-size: 12.5px; font-weight: 500; color: var(--tinta-3); margin: 8px 0 6px; }
+.catalogo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.producto { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; min-height: 64px; padding: 10px 12px; background: #fff; border: 1px solid var(--borde); border-radius: var(--r1); transition: border-color .15s, background .15s; }
+.producto:hover { border-color: var(--pino); background: var(--pino-tinte); }
+.producto:active { transform: scale(.985); }
+.producto-nombre { font-size: 13.5px; line-height: 1.25; }
+.producto-precio { font-size: 12.5px; color: var(--pino); font-weight: 600; margin-top: auto; }
+.tabla-venta { min-width: 860px; }
+.stepper { display: inline-flex; align-items: center; gap: 2px; }
+.stepper .btn-icono { width: 32px; height: 32px; border-color: var(--borde); background: #fff; }
+.stepper .celda { width: 62px; text-align: center; }
+.cierre { border-top: 1px solid var(--borde-suave); }
+.cierre summary { display: grid; grid-template-columns: 1fr auto auto auto; gap: 20px; align-items: center; padding: 12px 4px; cursor: pointer; list-style: none; font-variant-numeric: tabular-nums; }
+.cierre summary::-webkit-details-marker { display: none; }
+.cierre summary:hover { background: #F8FAF9; }
+.cierre-fecha { font-weight: 500; }
+.cierre[open] summary { border-bottom: 1px solid var(--borde-suave); }
+
+/* ---------- Historial ---------- */
+.historial { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 16px; align-items: start; }
+.meses { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--r2); padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+.mes-cab { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px; background: transparent; border: 0; border-radius: var(--r1); text-align: left; font-weight: 500; }
+.mes-cab:hover { background: var(--papel); }
+.mes-cab.activo { background: var(--pino-tinte); color: var(--pino-osc); }
+.chev { display: inline-flex; transition: transform .18s var(--ease); color: var(--tinta-3); }
+.mes-cab[aria-expanded=true] .chev { transform: rotate(90deg); }
+.mes-nombre { flex: 1; }
+.contador { min-width: 24px; padding: 0 8px; border-radius: 999px; background: #EAEFEC; color: var(--tinta-2); font-size: 12.5px; text-align: center; font-variant-numeric: tabular-nums; }
+.mes-dias { list-style: none; margin: 2px 0 6px 22px; padding: 0 0 0 10px; border-left: 1px solid var(--borde); }
+.dia { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 8px 10px; background: transparent; border: 0; border-radius: var(--r1); color: var(--tinta-2); }
+.dia:hover { background: var(--papel); }
+.dia.activo { background: var(--pino); color: #fff; }
+.dia.activo .contador { background: rgba(255, 255, 255, .22); color: #fff; }
+.dia.vacio-dia { color: var(--tinta-3); }
+.archivos { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--r2); padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.archivos-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.archivos-cab h2 { font: 500 24px/1.2 var(--f-titulo); }
+.dia-titulo { display: flex; align-items: center; gap: 10px; font: 500 18px/1.2 var(--f-titulo); margin-top: 6px; }
+.archivos-lista { display: flex; flex-direction: column; }
+.archivo { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 4px; border-top: 1px solid var(--borde-suave); }
+.archivo:first-child { border-top: 0; }
+.archivo-ico { display: inline-flex; width: 42px; height: 42px; align-items: center; justify-content: center; border-radius: var(--r1); background: var(--tomate-tinte); color: var(--tomate); }
+.archivo-nombre { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.archivo-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+.archivo-acc { display: flex; align-items: center; gap: 2px; }
+
+.zona { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px; border: 1.5px dashed #B9C8C1; border-radius: var(--r2); color: var(--tinta-2); background: #FAFCFB; text-align: center; }
+.zona p { margin: 0; }
+.zona-grande { padding: 64px 24px; background: var(--superficie); }
+.zona svg { color: var(--pino); }
+
+/* ---------- Diálogos ---------- */
+.dialogo { border: 0; border-radius: var(--r3); padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 48px); color: var(--tinta); box-shadow: 0 24px 60px rgba(23, 63, 51, .3); }
+.dialogo::backdrop { background: rgba(23, 63, 51, .4); }
+.dialogo[open] { display: flex; flex-direction: column; animation: entra .2s var(--ease); }
+.dialogo-chico { width: min(420px, calc(100vw - 32px)); padding: 24px; gap: 8px; }
+.dialogo-chico h2 { font: 500 22px/1.2 var(--f-titulo); }
+.dialogo-chico p { color: var(--tinta-2); }
+.dialogo-ancho { width: min(760px, calc(100vw - 32px)); }
+.dialogo-visor { width: min(1000px, calc(100vw - 32px)); height: calc(100vh - 48px); }
+.dialogo-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--borde-suave); }
+.dialogo-cab h2 { font: 500 22px/1.2 var(--f-titulo); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cab-acciones { display: flex; align-items: center; gap: 8px; flex: none; }
+.dialogo-cuerpo { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+.dialogo-pie { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--borde-suave); }
+.dialogo-chico .dialogo-pie { padding: 12px 0 0; border: 0; }
+.visor { flex: 1; width: 100%; border: 0; background: #EEF1EF; }
+.pend-lista { display: flex; flex-direction: column; gap: 14px; }
+.pend { border: 1px solid var(--borde); border-radius: var(--r2); padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+.pend header { display: flex; align-items: center; gap: 12px; }
+.pend-ico { display: inline-flex; color: var(--tomate); }
+.pend-nombre { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pend-nombre strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.clasif { display: flex; flex-direction: column; gap: 14px; }
+.campo { display: flex; flex-direction: column; gap: 6px; }
+.campo-fila { flex-direction: row; gap: 14px; }
+.campo-fila > div { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.campo-etq { font-size: 13px; font-weight: 500; color: var(--tinta-2); }
+.campo-ayuda { font-size: 12.5px; color: var(--tinta-3); }
+.campo .celda { border-color: var(--borde); background: #fff; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { height: 38px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--borde); background: #fff; color: var(--tinta-2); font-weight: 500; }
+.chip.activo { background: var(--pino); border-color: var(--pino); color: #fff; }
+
+/* ---------- Avisos ---------- */
+.avisos { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 200; pointer-events: none; width: min(92vw, 520px); }
+.aviso { background: var(--pino-osc); color: #fff; padding: 11px 18px; border-radius: var(--r1); font-size: 14px; box-shadow: 0 8px 24px rgba(23, 63, 51, .25); animation: entra .2s var(--ease); }
+.aviso.error { background: var(--tomate); }
+.aviso.sale { opacity: 0; transition: opacity .35s; }
+
+/* ---------- Adaptación a tablet y móvil ---------- */
+@media (max-width: 1099px) {
+  :root { --lateral: 92px; --pad: 24px; }
+  .lateral { padding: 20px 8px 16px; align-items: stretch; }
+  .marca { padding: 0 0 20px; align-items: center; }
+  .marca-nombre { font-size: 26px; }
+  .marca-sub { font-size: 10px; letter-spacing: .08em; }
+  .menu-item { flex-direction: column; gap: 4px; padding: 10px 4px; text-align: center; font-size: 11.5px; line-height: 1.2; }
+  .lateral-pie { display: none; }
+  .ventas-cuerpo, .historial { grid-template-columns: 1fr; }
+  .catalogo-lista { max-height: 340px; }
+  .rejilla-2 { grid-template-columns: 1fr; }
+  .banda { grid-auto-flow: row; grid-template-columns: repeat(2, 1fr); }
+  .banda-item { border-left: 0; border-top: 1px solid var(--borde-suave); }
+  .banda-item:nth-child(-n+2) { border-top: 0; }
+  .banda-item:nth-child(even) { border-left: 1px solid var(--borde-suave); }
+  .meses { flex-direction: row; flex-wrap: wrap; }
+  .mes { flex: 1 1 260px; }
+}
+@media (max-width: 719px) {
+  :root { --pad: 14px; }
+  .app { grid-template-columns: 1fr; padding-bottom: 68px; }
+  .lateral { position: fixed; inset: auto 0 0 0; top: auto; height: auto; flex-direction: row; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); z-index: 40; }
+  .marca { display: none; }
+  .menu { flex-direction: row; width: 100%; gap: 2px; }
+  .menu-item { flex: 1; min-width: 0; font-size: 10.5px; padding: 8px 2px; }
+  .cabecera { flex-direction: column; padding-top: 20px; }
+  .cabecera-titulo h1 { font-size: 28px; }
+  .cabecera-acciones { width: 100%; justify-content: space-between; }
+  .archivo { grid-template-columns: auto minmax(0, 1fr); }
+  .archivo-acc { grid-column: 1 / -1; justify-content: flex-end; }
+  .campo-fila { flex-direction: column; }
+  .buscar { min-width: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* ---------- Impresión (reporte de ventas del día) ---------- */
+@media print {
+  body { background: #fff; font-size: 12px; }
+  .lateral, .respaldo, .acciones-vista, .no-imprimir, .familias, .avisos, .salto, .cierre { display: none !important; }
+  .app { display: block; padding: 0; }
+  .principal { padding: 0; }
+  .cabecera { padding: 0 0 12px; }
+  .tarjeta, .banda { border-color: #999; break-inside: avoid; }
+  .ventas-cuerpo { display: block; }
+  .tabla-scroll { overflow: visible; }
+  .tabla-venta { min-width: 0; }
+  .vista.entra > * { animation: none; }
+}
+
+</style>
+</head>
+<body>
+  <a class="salto" href="#vista">Saltar al contenido</a>
+  <div class="app">
+    <aside class="lateral">
+      <div class="marca" aria-label="Diletto Artesanal">
+        <span class="marca-nombre">Diletto</span>
+        <span class="marca-sub">Artesanal</span>
+      </div>
+      <nav class="menu" id="menu" aria-label="Secciones"></nav>
+      <p class="lateral-pie estado" id="estadoGuardado">Guardado en este navegador</p>
+    </aside>
+
+    <div class="principal">
+      <header class="cabecera">
+        <div class="cabecera-titulo">
+          <h1 id="tituloVista"></h1>
+          <p id="subVista"></p>
+        </div>
+        <div class="cabecera-acciones">
+          <div id="accionesVista" class="acciones-vista"></div>
+          <div class="respaldo">
+            <button type="button" id="btnRespaldo" class="btn-icono" aria-haspopup="menu" aria-expanded="false" aria-label="Respaldo y datos" title="Respaldo y datos"></button>
+            <div id="menuRespaldo" class="popover" role="menu" hidden>
+              <button type="button" role="menuitem" data-a="exportar">Exportar respaldo</button>
+              <button type="button" role="menuitem" data-a="importar">Importar respaldo</button>
+              <button type="button" role="menuitem" data-a="restablecer" class="peligro">Restablecer datos del Excel</button>
+            </div>
+            <input type="file" id="archivoRespaldo" accept="application/json,.json" class="oculto">
+          </div>
+        </div>
+      </header>
+      <main id="vista" class="vista" tabindex="-1"></main>
+    </div>
+  </div>
+  <div id="toasts" class="avisos" aria-live="polite"></div>
+
+  <script>
+/* Datos iniciales de Diletto Artesanal, extraídos del Excel DILETTO_ARTESANAL.xlsm.
+   Se excluyen COSTOS INDIRECTOS y ACTUALIZACIÓN DE DATOS. Todo es editable desde la aplicación. */
+window.DILETTO_DATA = {"version":1,"grupos":["Platos fuertes","Entradas y acompañamientos","Postres y bebidas"],"familias":[{"id":"pizzas","nombre":"Pizzas","grupo":"Platos fuertes"},{"id":"pollo","nombre":"Pollo al horno","grupo":"Platos fuertes"},{"id":"lasana","nombre":"Lasaña","grupo":"Platos fuertes"},{"id":"panajo","nombre":"Pan al ajo","grupo":"Entradas y acompañamientos"},{"id":"papa","nombre":"Papa rellena","grupo":"Entradas y acompañamientos"},{"id":"mollejitas","nombre":"Mollejitas","grupo":"Entradas y acompañamientos"},{"id":"pasteles","nombre":"Pasteles","grupo":"Postres y bebidas"},{"id":"picarones","nombre":"Picarones","grupo":"Postres y bebidas"},{"id":"jugos","nombre":"Jugos y sándwiches","grupo":"Postres y bebidas"},{"id":"bebidas","nombre":"Bebidas","grupo":"Postres y bebidas"}],"insumos":{"lasana":[{"c":"MATERIALES","p":"Bandejas de Aluminio 500 Ml. con Tapa","q":100.0,"u":"UND","$":65.0,"pu":"Bandeja de Aluminio","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Blancas Asita 12X16","q":100.0,"u":"UND","$":5.0,"pu":"Bolsa Blanca 12X16","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Servilleta Nova (100 Und)","q":100.0,"u":"UND","$":2.0,"pu":"Servilleta Nova","qu":1.0,"v":"SI"},{"c":"ABARROTES","p":"Harina Nicolini para Pan","q":1000.0,"u":"g","$":1.5,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Láminas de Lasaña Tradicional Tottus","q":350.0,"u":"g","$":8.9,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Masa para Wantan San Sen Bolsa","q":500.0,"u":"g","$":4.5,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Leche Gloria Roja","q":400.0,"u":"g","$":4.2,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Queso Mozzarella","q":1000.0,"u":"g","$":28.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Carne Molida","q":750.0,"u":"g","$":14.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Nuez Moscada","q":100.0,"u":"g","$":5.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Pimienta","q":100.0,"u":"g","$":5.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Cebollas","q":1000.0,"u":"g","$":3.0,"pu":"Cebolla","qu":150.0,"v":"SI"},{"c":"ABARROTES","p":"Bolsa de Ajo","q":250.0,"u":"g","$":2.5,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Paquete de Pomarola Molitalia","q":870.0,"u":"g","$":7.5,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Mantequilla Sello de Oro","q":90.0,"u":"g","$":2.8,"pu":"","qu":0,"v":"SI"}],"mollejitas":[{"c":"MATERIALES","p":"Platos Bandeja PB2 la Firme","q":25.0,"u":"UND","$":2.5,"pu":"Bandeja PB2","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Blancas Asita 12X16","q":100.0,"u":"UND","$":2.5,"pu":"Bolsa Blanca 12X16","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Servilleta Nova (100 Und)","q":100.0,"u":"UND","$":2.0,"pu":"Servilleta Nova","qu":1.0,"v":"SI"},{"c":"ABARROTES","p":"Mollejas","q":1000.0,"u":"g","$":15.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Camote","q":500.0,"u":"g","$":0.8,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Choclo","q":300.0,"u":"g","$":0.8,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Bolsa de Rocoto Molido","q":50.0,"u":"g","$":0.5,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Bolsa de Molidos","q":50.0,"u":"g","$":0.5,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Paquete de Pimienta y Comino","q":30.0,"u":"g","$":0.5,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Orégano","q":250.0,"u":"g","$":4.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Sal Marina Emsa Mesa Bolsa","q":1000.0,"u":"g","$":1.7,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Paquete de Mayonesa Alacena","q":12.0,"u":"UND","$":3.0,"pu":"Mayonesa Alacena","qu":1.0,"v":"NO"}],"jugos":[{"c":"MATERIALES","p":"Vasos 12 Oz Pamolsa (jugos)","q":100.0,"u":"UND","$":2.0,"pu":"Vaso 12 Oz","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Tapas de Vasos 12 Oz Pamolsa (jugos)","q":100.0,"u":"UND","$":1.5,"pu":"Tapa de Vaso 12 Oz","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Vaso 12 Oz Pamolsa (café)","q":25.0,"u":"UND","$":5.8,"pu":"Vaso 12 Oz (café)","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Tapas de Vasos 12 Oz Pamolsa (café)","q":25.0,"u":"UND","$":3.0,"pu":"Tapa de Vaso 12 Oz (café)","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Paquete de Sorbetes (económicos)","q":50.0,"u":"UND","$":0.8,"pu":"Sorbetes","qu":1.0,"v":"SI"},{"c":"MATERIALES","p":"Paquete de Sobres de Papel Antigraso para Hamburguesas","q":50.0,"u":"UND","$":12.0,"pu":"Sobre de Papel para Hamburguesa","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Blancas Asita 8X12","q":50.0,"u":"UND","$":1.2,"pu":"Bolsa Blanca 8X12","qu":1.0,"v":"SI"},{"c":"MATERIALES","p":"Bolsas Plásticas Alfa 7X10","q":100.0,"u":"UND","$":2.0,"pu":"Bolsa Plástica 7X10","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Plásticas Alfa 2(1/2)x8","q":50.0,"u":"UND","$":2.5,"pu":"Bolsa Plástica Alfa 2(1/2)x8","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Servilleta Nova (100 Und)","q":100.0,"u":"UND","$":2.0,"pu":"Servilleta Nova","qu":1.0,"v":"SI"},{"c":"ABARROTES","p":"Paquete de Pan de Molde Unión","q":540.0,"u":"g","$":7.5,"pu":"Pan de Molde Unión","qu":22.5,"v":"NO"},{"c":"ABARROTES","p":"Panes Francés","q":3.0,"u":"UND","$":1.0,"pu":"Pan Francés","qu":1.0,"v":"NO"},{"c":"ABARROTES","p":"Paquete de Queso Suizo","q":125.0,"u":"g","$":3.0,"pu":"Queso Suizo","qu":20.0,"v":"NO"},{"c":"ABARROTES","p":"Jamon Pizzero Bred","q":1000.0,"u":"g","$":28.0,"pu":"Jamon","qu":15.0,"v":"NO"},{"c":"ABARROTES","p":"Pechuga de Pollo","q":250.0,"u":"g","$":3.5,"pu":"Trozos de Pechuga","qu":250.0,"v":"NO"},{"c":"ABARROTES","p":"Azúcar Blanca","q":1000.0,"u":"g","$":3.6,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Papaya","q":1700.0,"u":"g","$":3.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Piña","q":1800.0,"u":"g","$":5.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Manzanas Verdes","q":1000.0,"u":"g","$":1.5,"pu":"Manzana Verde","qu":50.0,"v":"NO"},{"c":"ABARROTES","p":"Fresas","q":500.0,"u":"g","$":4.5,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Maiz Morado","q":1000.0,"u":"g","$":4.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Membrillo","q":1000.0,"u":"g","$":6.0,"pu":"Membrillo","qu":60.0,"v":"SI"},{"c":"ABARROTES","p":"Limon","q":750.0,"u":"g","$":5.0,"pu":"Limon","qu":30.0,"v":"NO"},{"c":"ABARROTES","p":"Azúcar Rubia","q":1000.0,"u":"g","$":4.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Paquete de 6 Agua Cielo de 2.5 Lts.","q":15000.0,"u":"g","$":15.4,"pu":"Agua Cielo 2.5 Lts.","qu":2500.0,"v":"NO"},{"c":"ABARROTES","p":"Bolsa de Rocoto Molido","q":50.0,"u":"g","$":0.5,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Ají Amarillo","q":3.0,"u":"UND","$":1.0,"pu":"Ají Amarillo","qu":1.0,"v":"SI"},{"c":"ABARROTES","p":"Paquete de Mayonesa Alacena","q":12.0,"u":"UND","$":3.0,"pu":"Mayonesa Alacena","qu":1.0,"v":"SI"},{"c":"ABARROTES","p":"Mayonesa Tottus","q":475.0,"u":"g","$":9.1,"pu":"","qu":0,"v":"SI"}],"pollo":[{"c":"MATERIALES","p":"Contenedores de Plástico CT3 Pamolsa","q":100.0,"u":"UND","$":9.0,"pu":"Contenedor CT3","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Contenedor de Plástico CT5 Superfast","q":25.0,"u":"UND","$":15.0,"pu":"Contenedor CT5","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Envase Deli 1/2 Litro Superfast","q":25.0,"u":"UND","$":9.8,"pu":"Envase Deli 1/2 Litro","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Tapa Deli 1/2 Litro Superfast","q":25.0,"u":"UND","$":5.0,"pu":"Tapa Deli 1/2 Litro","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Envases Salseros 8 Oz","q":25.0,"u":"UND","$":3.4,"pu":"Envase Salsero 8 Oz","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Envases Salseros 2 Oz","q":100.0,"u":"UND","$":10.0,"pu":"Envase Salsero 2 Oz","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Blancas Asita 21X24","q":225.0,"u":"UND","$":4.0,"pu":"Bolsa Blanca 21X24","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Blancas Asita 16X19","q":100.0,"u":"UND","$":4.0,"pu":"Bolsa Blanca 16X19","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Paquete de Ligas #18 Alleanza","q":100.0,"u":"UND","$":23.0,"pu":"Liga #18 Alleanza","qu":1.0,"v":"NO"},{"c":"ABARROTES","p":"Pollo Artesanal Entero","q":1720.0,"u":"g","$":15.8,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Pollo Artesanal 1/2","q":860.0,"u":"g","$":7.9,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Pollo Artesanal 1/4","q":430.0,"u":"g","$":3.95,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Aceite de Oliva Extra Virgen Río Magdalena","q":1000.0,"u":"g","$":42.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Aceite Vegetal Tottus","q":900.0,"u":"g","$":5.6,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Paquete de Pimienta y Comino","q":30.0,"u":"g","$":0.5,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Paquete de Mostaza Alacena","q":96.0,"u":"g","$":1.5,"pu":"Mostaza","qu":8.0,"v":"SI"},{"c":"ABARROTES","p":"Paquete de Ketchup's Alpesa","q":12.0,"u":"UND","$":2.5,"pu":"Ketchup","qu":1.0,"v":"NO"},{"c":"ABARROTES","p":"Paquete de Mayonesa Alacena","q":12.0,"u":"UND","$":3.0,"pu":"Mayonesa Alacena","qu":1.0,"v":"SI"},{"c":"ABARROTES","p":"Bolsa de Molidos","q":50.0,"u":"g","$":0.5,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Tiras de Romero","q":48.0,"u":"g","$":1.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Lechuga","q":700.0,"u":"g","$":2.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Pepinillo","q":300.0,"u":"g","$":0.7,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Zanahoria","q":1000.0,"u":"g","$":1.5,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Papa Amarilla","q":1000.0,"u":"g","$":3.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Limon","q":750.0,"u":"","$":5.0,"pu":"Limon","qu":30.0,"v":"NO"},{"c":"ABARROTES","p":"Sal Marina Emsa Mesa Bolsa","q":1000.0,"u":"g","$":1.7,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Mayonesa Tottus","q":475.0,"u":"g","$":9.1,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Rocoto","q":1.0,"u":"UND","$":0.8,"pu":"Rocoto","qu":1.0,"v":"NO"}],"picarones":[{"c":"MATERIALES","p":"Platos Bandeja PB2 la Firme","q":25.0,"u":"UND","$":2.5,"pu":"Bandeja PB2","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Blancas Asita 10X15","q":90.0,"u":"UND","$":1.5,"pu":"Bolsa Blanca 10X15","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Plásticas Alfa 10X15","q":100.0,"u":"UND","$":2.5,"pu":"Bolsa Plástica Alfa 10X15","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Plásticas Alfa 2(1/2)x8","q":50.0,"u":"UND","$":0.5,"pu":"Bolsa Plástica Alfa 2(1/2)x8","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Servilleta Nova (100 Und)","q":100.0,"u":"UND","$":2.0,"pu":"Servilleta Nova","qu":1.0,"v":"SI"},{"c":"ABARROTES","p":"Harina Nicolini para Pan","q":1000.0,"u":"g","$":1.4,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Levadura Fresca Fleischmann","q":500.0,"u":"g","$":9.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Chancaca","q":455.0,"u":"g","$":3.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Camote","q":500.0,"u":"g","$":0.8,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Ramas de Canela","q":12.0,"u":"UND","$":0.5,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Tiras de Zapallo","q":500.0,"u":"g","$":0.8,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Tiras de Anís","q":20.0,"u":"g","$":0.2,"pu":"","qu":0,"v":"NO"}],"papa":[{"c":"MATERIALES","p":"Bandejas Salchifirme","q":25.0,"u":"UND","$":2.5,"pu":"Bandeja Salchifirme","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Platos Bandeja PB2 la Firme","q":25.0,"u":"UND","$":2.5,"pu":"Bandeja PB2","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Tenedores Plásticos (económicos)","q":50.0,"u":"UND","$":0.5,"pu":"Tenedor Plástico","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Plásticas Alfa 2(1/2)x8","q":50.0,"u":"UND","$":5.0,"pu":"Bolsa Plástica Alfa 2(1/2)x8","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Plásticas Alfa 8X12","q":90.0,"u":"UND","$":5.0,"pu":"Bolsa Plástica Alfa 8X12","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Servilleta Nova (100 Und)","q":100.0,"u":"UND","$":2.0,"pu":"Servilleta Nova","qu":1.0,"v":"SI"},{"c":"ABARROTES","p":"Papa Yungay Vieja","q":6000.0,"u":"g","$":10.2,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Carne Molida","q":750.0,"u":"g","$":14.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Cebolla China","q":250.0,"u":"g","$":2.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Aceitunas Negras","q":250.0,"u":"g","$":4.0,"pu":"Aceituna Negra","qu":3.0,"v":"SI"},{"c":"ABARROTES","p":"Sal Marina Emsa Mesa Bolsa","q":1000.0,"u":"g","$":1.7,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Aceite Vegetal Tottus","q":900.0,"u":"g","$":5.4,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Bolsa de Rocoto Molido","q":50.0,"u":"g","$":0.5,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Bolsa de Molidos","q":50.0,"u":"g","$":0.5,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Ají Amarillo","q":3.0,"u":"UND","$":1.0,"pu":"Ají Amarillo","qu":1.0,"v":"SI"},{"c":"ABARROTES","p":"Paquete de Mayonesa Alacena","q":12.0,"u":"UND","$":3.0,"pu":"Mayonesa Alacena","qu":1.0,"v":"SI"},{"c":"ABARROTES","p":"Mayonesa Tottus","q":475.0,"u":"g","$":9.1,"pu":"","qu":0,"v":"SI"}],"panajo":[{"c":"MATERIALES","p":"Bolsas Kraft #4","q":100.0,"u":"UND","$":9.0,"pu":"Bolsa Kraft #4","qu":1.0,"v":"SI"},{"c":"ABARROTES","p":"Panes Marraqueta","q":3.0,"u":"UND","$":1.0,"pu":"Pan Marraqueta","qu":1.0,"v":"SI"},{"c":"ABARROTES","p":"Mantequilla Sello de Oro","q":90.0,"u":"g","$":2.8,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Bolsa de Ajo","q":250.0,"u":"g","$":2.5,"pu":"","qu":0,"v":"SI"}],"pizzas":[{"c":"MATERIALES","p":"Bandejas para Porción de Pizza","q":100.0,"u":"UND","$":12.0,"pu":"Bandeja para Porción de Pizza","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Cajas de Pizza 40X40","q":12.0,"u":"UND","$":26.0,"pu":"Caja de Pizza 40X40","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Cajas de Pizzas 35X35","q":12.0,"u":"UND","$":20.4,"pu":"Caja de Pizza 35X35","qu":1.0,"v":"SI"},{"c":"MATERIALES","p":"Cajas de Pizza 25X25","q":12.0,"u":"UND","$":15.6,"pu":"Caja de Pizza 25X25","qu":1.0,"v":"SI"},{"c":"MATERIALES","p":"Cajas de Pizza 18X18","q":12.0,"u":"UND","$":13.0,"pu":"Caja de Pizza 18X18","qu":1.0,"v":"SI"},{"c":"MATERIALES","p":"Envases Salseros 1 Oz","q":100.0,"u":"UND","$":5.0,"pu":"Envase Salsero 1 Oz","qu":1.0,"v":"SI"},{"c":"MATERIALES","p":"Bolsas Plásticas Alfa 2(1/2)x8","q":100.0,"u":"UND","$":1.0,"pu":"Bolsa Plástica Alfa 2(1/2)x8","qu":1.0,"v":"SI"},{"c":"MATERIALES","p":"Bolsas Blancas Asita 10X15","q":50.0,"u":"UND","$":0.5,"pu":"Bolsa Blanca 10X15","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Blancas Asita 12X16","q":100.0,"u":"UND","$":2.5,"pu":"Bolsa Blanca 12X16","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Blancas Asita 16X19","q":100.0,"u":"UND","$":4.0,"pu":"Bolsa Blanca 16X19","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Blancas Asita 21X24","q":100.0,"u":"UND","$":9.0,"pu":"Bolsa Blanca 21X24","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Kraft #4","q":100.0,"u":"UND","$":9.0,"pu":"Bolsa Kraft #4","qu":1.0,"v":"SI"},{"c":"MATERIALES","p":"1/4 de Papel Manteca","q":25.0,"u":"UND","$":7.0,"pu":"Papel Manteca","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Stickers de Seguridad","q":1000.0,"u":"UND","$":55.0,"pu":"Sticker de Seguridad","qu":1.0,"v":"NO"},{"c":"ABARROTES","p":"Harina Nicolini Especial","q":1000.0,"u":"g","$":1.5,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Levadura Fresca Fleischmann","q":500.0,"u":"g","$":8.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Mejorador Unipan Premium (fórmula Original)","q":1000.0,"u":"g","$":9.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Azúcar Rubia","q":1000.0,"u":"g","$":4.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Sal Marina Emsa Mesa Bolsa","q":1000.0,"u":"g","$":1.7,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Aceite Vegetal Tottus","q":900.0,"u":"g","$":5.4,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Orégano","q":250.0,"u":"g","$":4.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Ají Pizzero","q":125.0,"u":"g","$":5.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Queso Paria","q":1000.0,"u":"g","$":32.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Queso Mozzarella","q":1000.0,"u":"g","$":28.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Jamon Pizzero Bred","q":1000.0,"u":"g","$":28.0,"pu":"Jamon","qu":15.0,"v":"SI"},{"c":"ABARROTES","p":"Tarro de Piña Almibar Compass","q":340.0,"u":"g","$":6.0,"pu":"Rodaja de Piña","qu":37.0,"v":"SI"},{"c":"ABARROTES","p":"TARR0 de Champiñones Santis","q":445.0,"u":"g","$":5.0,"pu":"Champiñon","qu":18.0,"v":"SI"},{"c":"ABARROTES","p":"Paquete de Pomarola Molitalia","q":870.0,"u":"g","$":7.5,"pu":"Pomarola","qu":145.0,"v":"SI"},{"c":"ABARROTES","p":"Paquete de Pepperoni Bread","q":500.0,"u":"g","$":19.0,"pu":"Pepperoni","qu":3.0,"v":"SI"},{"c":"ABARROTES","p":"Paquete de Chorizo Segoviana","q":800.0,"u":"g","$":12.0,"pu":"Chorizo","qu":80.0,"v":"SI"},{"c":"ABARROTES","p":"Paquete de Tocino Razetto","q":250.0,"u":"g","$":13.0,"pu":"Tira de Tocino","qu":36.0,"v":"SI"},{"c":"ABARROTES","p":"Pimenton","q":100.0,"u":"g","$":0.8,"pu":"Tira de Pimenton","qu":8.0,"v":"SI"},{"c":"ABARROTES","p":"Tomates","q":1000.0,"u":"g","$":5.0,"pu":"Tomate","qu":145.0,"v":"SI"},{"c":"ABARROTES","p":"Cebollas","q":1000.0,"u":"g","$":3.0,"pu":"Cebolla","qu":150.0,"v":"SI"},{"c":"ABARROTES","p":"Espinacas","q":500.0,"u":"g","$":3.5,"pu":"Hoja de Espinaca","qu":25.0,"v":"SI"},{"c":"ABARROTES","p":"Aceitunas Negras","q":250.0,"u":"g","$":5.0,"pu":"Aceituna Negra","qu":3.0,"v":"SI"},{"c":"ABARROTES","p":"Aceitunas Verdes","q":250.0,"u":"g","$":5.0,"pu":"Aceituna Verde","qu":3.0,"v":"SI"},{"c":"ABARROTES","p":"Pechuga de Pollo","q":250.0,"u":"g","$":4.0,"pu":"Trozos de Pechuga","qu":250.0,"v":"SI"}],"pasteles":[{"c":"MATERIALES","p":"Cajas para Torta con Tapa 27X27X10","q":100.0,"u":"UND","$":3.0,"pu":"Caja para Torta con Tapa","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Contenedor de Tajada para Pastel","q":0.0,"u":"","$":0.0,"pu":"","qu":0.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Plásticas Alfa 5X10","q":90.0,"u":"UND","$":1.5,"pu":"Bolsa Plástica 5X10","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Bolsas Blancas Asita 16X19","q":25.0,"u":"UND","$":3.0,"pu":"Bolsa Blanca 16X19","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Papel Manteca","q":6.0,"u":"UND","$":9.6,"pu":"Papel Manteca","qu":1.0,"v":"NO"},{"c":"MATERIALES","p":"Servilleta Nova (100 Und)","q":100.0,"u":"UND","$":2.0,"pu":"Servilleta Nova","qu":1.0,"v":"SI"},{"c":"ABARROTES","p":"Harina Espiga de Oro","q":1000.0,"u":"g","$":5.8,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Polvo para Hornear Royal","q":20.0,"u":"g","$":1.5,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Azúcar Blanca","q":1000.0,"u":"g","$":1.6,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Mantequilla Margarina","q":90.0,"u":"g","$":2.5,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Sal Marina Emsa Mesa Bolsa","q":1000.0,"u":"g","$":1.7,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Extracto de Vainilla Umsha","q":90.0,"u":"g","$":1.7,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Aceite Cocinero Tottus","q":900.0,"u":"g","$":5.6,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Leche Gloria Azul","q":390.0,"u":"g","$":4.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Huevos","q":3.0,"u":"UND","$":3.0,"pu":"Huevo","qu":1.0,"v":"SI"},{"c":"ABARROTES","p":"Chispas de Chocolate","q":250.0,"u":"g","$":5.0,"pu":"","qu":0,"v":"SI"},{"c":"ABARROTES","p":"Arándanos","q":1000.0,"u":"g","$":4.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Limon","q":25.0,"u":"UND","$":5.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Piña","q":1800.0,"u":"g","$":5.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Naranja","q":25.0,"u":"UND","$":7.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Canela en Polvo","q":50.0,"u":"g","$":2.0,"pu":"","qu":0,"v":"NO"},{"c":"ABARROTES","p":"Plátanos Seda","q":6.0,"u":"UND","$":1.5,"pu":"Plátano","qu":1.0,"v":"SI"}],"bebidas":[{"c":"BEBIDAS","p":"Inca Kola 1 Lt.","q":1,"u":"UND","$":5.0,"pu":"","qu":0,"v":""},{"c":"BEBIDAS","p":"Coca Cola 1 Lt.","q":1,"u":"UND","$":5.0,"pu":"","qu":0,"v":""},{"c":"BEBIDAS","p":"Pepsi 1 Lt.","q":1,"u":"UND","$":4.0,"pu":"","qu":0,"v":""},{"c":"BEBIDAS","p":"Inca Kola 1.5 Lt.","q":1,"u":"UND","$":7.5,"pu":"","qu":0,"v":""},{"c":"BEBIDAS","p":"Coca Cola 1.5 Lt.","q":1,"u":"UND","$":7.5,"pu":"","qu":0,"v":""},{"c":"BEBIDAS","p":"Pepsi 1.5 Lt.","q":1,"u":"UND","$":7.0,"pu":"","qu":0,"v":""},{"c":"BEBIDAS","p":"Inca Kola 500 ml.","q":1,"u":"UND","$":3.0,"pu":"","qu":0,"v":""},{"c":"BEBIDAS","p":"Coca Cola 500 ml.","q":1,"u":"UND","$":3.0,"pu":"","qu":0,"v":""},{"c":"BEBIDAS","p":"Pepsi 500 ml.","q":1,"u":"UND","$":3.0,"pu":"","qu":0,"v":""}]},"bloques":{"lasana":[{"id":"lasana-receta","titulo":"Preparación de la lasaña","tipo":"receta","lineas":[{"s":"Preparación Carne Molida"},{"i":"Carne Molida","q":500.0},{"i":"Paquete de Pomarola Molitalia","q":218.0},{"i":"Bolsa de Ajo","q":50.0},{"s":"Preparación Salsa"},{"i":"Harina Nicolini para Pan","q":90.0},{"i":"Mantequilla Sello de Oro","q":45.0},{"i":"Leche Gloria Roja","q":125.0},{"i":"Nuez Moscada","q":0.0},{"i":"Pimienta","q":0.0},{"s":"Preparación con Láminas"},{"i":"Láminas de Lasaña Tradicional Tottus","q":80.0},{"i":"Masa para Wantan San Sen Bolsa","q":72.0},{"i":"Queso Mozzarella","q":125.0}],"rinde":2,"unidad":"porciones"},{"id":"lasana-empaque","titulo":"Empaquetado","tipo":"empaque","lineas":[{"i":"Bandeja de Aluminio","q":1.0},{"i":"Bolsa Blanca 12X16","q":1.0},{"i":"Servilleta Nova","q":2.0}]}],"mollejitas":[{"id":"molle-receta","titulo":"Producción de 60 mollejitas","tipo":"receta","lineas":[{"i":"Mollejas","q":1000.0},{"i":"Bolsa de Molidos","q":50.0},{"i":"Sal Marina Emsa Mesa Bolsa","q":10.0},{"i":"Paquete de Pimienta y Comino","q":30.0},{"i":"Orégano","q":12.5}],"rinde":60,"unidad":"mollejas"},{"id":"molle-extras","titulo":"Extras para 60 mollejitas (camote y choclo)","tipo":"receta","lineas":[{"i":"Camote","q":1200.0},{"i":"Choclo","q":300.0}],"rinde":60,"unidad":"mollejas"},{"id":"molle-platillo","titulo":"Producción por platillo (12 mollejitas)","tipo":"receta","lineas":[{"ref":"molle-receta","q":12,"nombre":"Molleja (del lote de 60)"},{"i":"Camote","q":200.0},{"i":"Choclo","q":50.0}]},{"id":"molle-empaque","titulo":"Empaquetado","tipo":"empaque","lineas":[{"i":"Bandeja PB2","q":1.0},{"i":"Bolsa Blanca 12X16","q":1.0},{"i":"Servilleta Nova","q":2.0}]},{"id":"molle-acomp","titulo":"Acompañamiento","tipo":"empaque","lineas":[{"i":"Mayonesa Alacena","q":1.0},{"i":"Bolsa de Rocoto Molido","q":8.0}]}],"jugos":[{"id":"jug-molde","titulo":"Sándwich de pan de molde","tipo":"receta","lineas":[{"i":"Pan de Molde Unión","q":22.5},{"i":"Jamon","q":15.0},{"i":"Queso Suizo","q":20.0}]},{"id":"jug-pollo","titulo":"Sándwich de pan con pollo","tipo":"receta","lineas":[{"i":"Pan Francés","q":1.0},{"i":"Trozos de Pechuga","q":70.0}]},{"id":"jug-emp-sand","titulo":"Empaquetado de sándwiches","tipo":"empaque","lineas":[{"i":"Bolsa Blanca 8X12","q":1.0},{"i":"Sobre de Papel para Hamburguesa","q":1.0},{"i":"Bolsa Plástica Alfa 2(1/2)x8","q":1.0},{"i":"Servilleta Nova","q":2.0}]},{"id":"jug-acomp-sand","titulo":"Acompañamiento de sándwiches","tipo":"empaque","lineas":[{"i":"Mayonesa Alacena","q":1.0},{"i":"Ají Amarillo","q":1.0}]},{"id":"jug-jugo","titulo":"Jugo combinado","tipo":"receta","lineas":[{"i":"Papaya","q":200.0},{"i":"Piña","q":70.0},{"i":"Manzana Verde","q":70.0},{"i":"Fresas","q":20.0},{"i":"Azúcar Blanca","q":60.0},{"i":"Agua Cielo 2.5 Lts.","q":630.0}],"rinde":3,"unidad":"vasos"},{"id":"jug-chicha","titulo":"Chicha morada (4 litros)","tipo":"receta","lineas":[{"i":"Maiz Morado","q":350.0},{"i":"Membrillo","q":150.0},{"i":"Piña","q":180.0},{"i":"Limon","q":30.0},{"i":"Azúcar Rubia","q":150.0}],"rinde":20,"unidad":"vasos"},{"id":"jug-emp-jugos","titulo":"Empaquetado de jugos","tipo":"empaque","lineas":[{"i":"Vaso 12 Oz","q":1.0},{"i":"Tapa de Vaso 12 Oz","q":1.0},{"i":"Sorbetes","q":1.0}]},{"id":"jug-cafe","titulo":"Café","tipo":"receta","lineas":[{"i":"Café","q":0},{"i":"Azúcar Rubia","q":0}]},{"id":"jug-emp-cafe","titulo":"Empaquetado de café","tipo":"empaque","lineas":[{"i":"Vaso 12 Oz (café)","q":1.0},{"i":"Tapa de Vaso 12 Oz (café)","q":1.0},{"i":"Bolsa Blanca 8X12","q":1.0},{"i":"Servilleta Nova","q":3.0}]},{"id":"jug-emp-jarra","titulo":"Empaquetado de jarra de litro","tipo":"empaque","lineas":[{"i":"Bolsa Blanca 8X12","q":1},{"i":"Bolsa Plástica 7X10","q":1}]}],"pollo":[{"id":"pollo-entero-base","titulo":"Pollo entero: preparación","tipo":"receta","lineas":[{"i":"Pollo Artesanal Entero","q":1720.0},{"i":"Bolsa de Molidos","q":25.0},{"i":"Sal Marina Emsa Mesa Bolsa","q":40.0},{"i":"Aceite Vegetal Tottus","q":60.0},{"i":"Tiras de Romero","q":8.0}]},{"id":"pollo-entero-ensalada","titulo":"Pollo entero: ensalada","tipo":"receta","lineas":[{"i":"Lechuga","q":80.0},{"i":"Pepinillo","q":150.0},{"i":"Zanahoria","q":75.0},{"i":"Limon","q":50.0},{"i":"Paquete de Pimienta y Comino","q":0},{"i":"Sal Marina Emsa Mesa Bolsa","q":0},{"i":"Mostaza","q":12.0},{"i":"Aceite de Oliva Extra Virgen Río Magdalena","q":30.0}]},{"id":"pollo-entero-papas","titulo":"Pollo entero: papas fritas","tipo":"receta","lineas":[{"i":"Papa Amarilla","q":1000.0},{"i":"Aceite Vegetal Tottus","q":50.0},{"i":"Sal Marina Emsa Mesa Bolsa","q":20.0}]},{"id":"pollo-entero-emp","titulo":"Pollo entero: empaquetado","tipo":"empaque","lineas":[{"i":"Bolsa Blanca 21X24","q":1.0},{"i":"Contenedor CT3","q":1.0},{"i":"Contenedor CT5","q":1.0},{"i":"Envase Deli 1/2 Litro","q":1.0},{"i":"Tapa Deli 1/2 Litro","q":1.0},{"i":"Envase Salsero 2 Oz","q":2.0},{"i":"Liga #18 Alleanza","q":3.0}]},{"id":"pollo-entero-acomp","titulo":"Pollo entero: acompañamiento","tipo":"empaque","lineas":[{"i":"Mayonesa Alacena","q":1.0},{"i":"Ketchup","q":1.0},{"i":"Rocoto","q":0.5}]},{"id":"pollo-medio-base","titulo":"Pollo 1/2: preparación","tipo":"receta","lineas":[{"i":"Pollo Artesanal 1/2","q":860.0},{"i":"Bolsa de Molidos","q":25.0},{"i":"Sal Marina Emsa Mesa Bolsa","q":40.0},{"i":"Aceite Vegetal Tottus","q":60.0},{"i":"Tiras de Romero","q":8.0}]},{"id":"pollo-medio-ensalada","titulo":"Pollo 1/2: ensalada","tipo":"receta","lineas":[{"i":"Lechuga","q":80.0},{"i":"Pepinillo","q":150.0},{"i":"Zanahoria","q":75.0},{"i":"Limon","q":50.0},{"i":"Paquete de Pimienta y Comino","q":0},{"i":"Sal Marina Emsa Mesa Bolsa","q":0},{"i":"Mostaza","q":4.0},{"i":"Aceite de Oliva Extra Virgen Río Magdalena","q":30.0}]},{"id":"pollo-medio-papas","titulo":"Pollo 1/2: papas fritas","tipo":"receta","lineas":[{"i":"Papa Amarilla","q":450.0},{"i":"Aceite Vegetal Tottus","q":8.0},{"i":"Sal Marina Emsa Mesa Bolsa","q":10.0}]},{"id":"pollo-medio-emp","titulo":"Pollo 1/2: empaquetado","tipo":"empaque","lineas":[{"i":"Bolsa Blanca 16X19","q":1.0},{"i":"Contenedor CT3","q":1.0},{"i":"Envase Salsero 8 Oz","q":1.0},{"i":"Envase Salsero 2 Oz","q":2.0},{"i":"Liga #18 Alleanza","q":2.0}]},{"id":"pollo-medio-acomp","titulo":"Pollo 1/2: acompañamiento","tipo":"empaque","lineas":[{"i":"Mayonesa Alacena","q":1.0},{"i":"Ketchup","q":1.0},{"i":"Rocoto","q":0.5}]},{"id":"pollo-cuarto-base","titulo":"Pollo 1/4: preparación","tipo":"receta","lineas":[{"i":"Pollo Artesanal 1/4","q":430.0},{"i":"Bolsa de Molidos","q":25.0},{"i":"Sal Marina Emsa Mesa Bolsa","q":40.0},{"i":"Aceite Vegetal Tottus","q":60.0},{"i":"Tiras de Romero","q":8.0}]},{"id":"pollo-cuarto-ensalada","titulo":"Pollo 1/4: ensalada","tipo":"receta","lineas":[{"i":"Lechuga","q":40.0},{"i":"Pepinillo","q":75.0},{"i":"Zanahoria","q":37.5},{"i":"Limon","q":25.0},{"i":"Paquete de Pimienta y Comino","q":0},{"i":"Sal Marina Emsa Mesa Bolsa","q":0},{"i":"Mostaza","q":2.0},{"i":"Aceite de Oliva Extra Virgen Río Magdalena","q":30.0}]},{"id":"pollo-cuarto-papas","titulo":"Pollo 1/4: papas fritas","tipo":"receta","lineas":[{"i":"Papa Amarilla","q":250.0},{"i":"Aceite Vegetal Tottus","q":8.0},{"i":"Sal Marina Emsa Mesa Bolsa","q":10.0}]},{"id":"pollo-cuarto-emp","titulo":"Pollo 1/4: empaquetado","tipo":"empaque","lineas":[{"i":"Bolsa Blanca 16X19","q":1.0},{"i":"Contenedor CT3","q":1.0},{"i":"Envase Salsero 8 Oz","q":1.0},{"i":"Envase Salsero 2 Oz","q":2.0},{"i":"Liga #18 Alleanza","q":3.0}]},{"id":"pollo-cuarto-acomp","titulo":"Pollo 1/4: acompañamiento","tipo":"empaque","lineas":[{"i":"Mayonesa Alacena","q":1.0},{"i":"Ketchup","q":1.0},{"i":"Rocoto","q":0.5}]}],"picarones":[{"id":"pic-receta","titulo":"Masa de picarones","tipo":"receta","lineas":[{"i":"Harina Nicolini para Pan","q":1000.0},{"i":"Levadura Fresca Fleischmann","q":50.0},{"i":"Tiras de Zapallo","q":500.0},{"i":"Camote","q":500.0},{"i":"Tiras de Anís","q":20.0}],"rinde":68,"unidad":"picarones"},{"id":"pic-dulce","titulo":"Dulce (miel de chancaca)","tipo":"receta","lineas":[{"i":"Chancaca","q":454.0},{"i":"Ramas de Canela","q":6.0}],"rinde":68,"unidad":"picarones"},{"id":"pic-empaque","titulo":"Empaquetado","tipo":"empaque","lineas":[{"i":"Bandeja PB2","q":1.0},{"i":"Bolsa Blanca 10X15","q":1.0},{"i":"Bolsa Plástica Alfa 10X15","q":1.0},{"i":"Servilleta Nova","q":2.0},{"i":"Bolsa Plástica Alfa 2(1/2)x8","q":0.0}]}],"papa":[{"id":"papa-receta","titulo":"Producción de papa rellena","tipo":"receta","lineas":[{"i":"Papa Yungay Vieja","q":2500.0},{"i":"Carne Molida","q":300.0},{"i":"Cebolla China","q":62.5},{"i":"Aceituna Negra","q":24.0},{"i":"Bolsa de Molidos","q":60.0},{"i":"Sal Marina Emsa Mesa Bolsa","q":10.0},{"i":"Aceite Vegetal Tottus","q":450.0}],"rinde":13,"unidad":"unidades"},{"id":"papa-empaque","titulo":"Empaquetado","tipo":"empaque","lineas":[{"i":"Bandeja Salchifirme","q":1.0},{"i":"Bolsa Plástica Alfa 2(1/2)x8","q":1.0},{"i":"Bolsa Plástica Alfa 8X12","q":1.0},{"i":"Tenedor Plástico","q":1.0},{"i":"Servilleta Nova","q":2.0}]},{"id":"papa-acomp","titulo":"Acompañamiento","tipo":"empaque","lineas":[{"i":"Mayonesa Alacena","q":1.0},{"i":"Ají Amarillo","q":0.5}]}],"panajo":[{"id":"ajo-receta","titulo":"Producción de pan al ajo","tipo":"receta","lineas":[{"i":"Pan Marraqueta","q":3.0},{"i":"Mantequilla Sello de Oro","q":45.0},{"i":"Bolsa de Ajo","q":20.0}],"rinde":6,"unidad":"porciones"},{"id":"ajo-empaque","titulo":"Empaquetado","tipo":"empaque","lineas":[{"i":"Bolsa Kraft #4","q":1.0}]}],"pasteles":[{"id":"pas-platano","titulo":"Pastel de plátano con chispas de chocolate","tipo":"receta","lineas":[{"i":"Harina Espiga de Oro","q":450.0},{"i":"Polvo para Hornear Royal","q":10.0},{"i":"Sal Marina Emsa Mesa Bolsa","q":1.0},{"i":"Azúcar Blanca","q":180.0},{"i":"Huevo","q":3.0},{"i":"Extracto de Vainilla Umsha","q":10.0},{"i":"Aceite Cocinero Tottus","q":150.0},{"i":"Plátano","q":4.0},{"i":"Chispas de Chocolate","q":40.0}],"rinde":1,"unidad":"pastel"},{"id":"pas-arandano","titulo":"Pastel de arándano","tipo":"receta","lineas":[{"i":"Harina Espiga de Oro","q":450.0},{"i":"Polvo para Hornear Royal","q":10.0},{"i":"Sal Marina Emsa Mesa Bolsa","q":1.0},{"i":"Azúcar Blanca","q":270.0},{"i":"Huevos","q":4.0},{"i":"Extracto de Vainilla Umsha","q":8.0},{"i":"Aceite Cocinero Tottus","q":200.0},{"i":"Leche Gloria Azul","q":230.0},{"i":"Arándanos","q":300.0},{"i":"Limon","q":1.0}],"rinde":1,"unidad":"pastel"},{"id":"pas-vainilla","titulo":"Pastel de vainilla","tipo":"receta","lineas":[{"i":"Harina Espiga de Oro","q":480.0},{"i":"Polvo para Hornear Royal","q":8.0},{"i":"Sal Marina Emsa Mesa Bolsa","q":1.0},{"i":"Mantequilla Margarina","q":180.0},{"i":"Azúcar Blanca","q":177.0},{"i":"Aceite Cocinero Tottus","q":145.0},{"i":"Leche Gloria Azul","q":135.0},{"i":"Huevos","q":4.0},{"i":"Extracto de Vainilla Umsha","q":8.0}],"rinde":1,"unidad":"pastel"},{"id":"pas-pina","titulo":"Pastel de piña","tipo":"receta","lineas":[{"i":"Harina Espiga de Oro","q":480.0},{"i":"Huevos","q":4.0},{"i":"Azúcar Blanca","q":177.0},{"i":"Mantequilla Margarina","q":180.0},{"i":"Polvo para Hornear Royal","q":8.0},{"i":"Extracto de Vainilla Umsha","q":8.0},{"i":"Piña","q":200.0},{"s":"Preparación de Caramelo"},{"i":"Azúcar Blanca","q":180.0},{"i":"Limon","q":0.5},{"i":"Jugo de Piña","q":80.0}],"rinde":1,"unidad":"pastel"},{"id":"pas-naranja","titulo":"Pastel de naranja","tipo":"receta","lineas":[{"i":"Harina Espiga de Oro","q":480.0},{"i":"Polvo para Hornear Royal","q":8.0},{"i":"Bicarbonato de Sodio","q":4.0},{"i":"Azúcar Blanca","q":177.0},{"i":"Mantequilla Margarina","q":180.0},{"i":"Extracto de Vainilla Umsha","q":8.0},{"i":"Huevos","q":4.0},{"i":"Naranja","q":1.0},{"i":"Canela en Polvo","q":2.0}],"rinde":1,"unidad":"pastel"},{"id":"pas-emp-entero","titulo":"Empaquetado de pastel entero","tipo":"empaque","lineas":[{"i":"Caja Para Torta Con Tapa","q":1},{"i":"Papel Manteca","q":1},{"i":"Bolsa Plástica 5X10","q":1}]},{"id":"pas-emp-tajada","titulo":"Empaquetado por tajada","tipo":"empaque","lineas":[{"i":"Bolsa Plástica 5X10","q":1},{"i":"Servilleta Nova","q":1}]}],"bebidas":[],"pizzas":[{"id":"pizza-masa","titulo":"Masa madre (tanda de 1900 g)","tipo":"receta","rinde":1900,"unidad":"g","lineas":[{"i":"Harina Nicolini Especial","q":1100.0},{"i":"Levadura Fresca Fleischmann","q":20.0},{"i":"Azúcar Rubia","q":30.0},{"i":"Sal Marina Emsa Mesa Bolsa","q":20.0},{"i":"Aceite Vegetal Tottus","q":100.0},{"i":"Mejorador Unipan Premium (fórmula Original)","q":10.0}]},{"id":"pizza-emp-personal","titulo":"Empaquetado y acompañamiento: pizza personal","tipo":"empaque","lineas":[{"i":"Caja de Pizza 18X18","q":1.0},{"i":"Bolsa Blanca 12X16","q":0.0},{"i":"Bolsa Plástica Alfa 2(1/2)x8","q":2.0},{"i":"Papel Manteca","q":0.0},{"i":"Sticker de Seguridad","q":0.0},{"i":"Ají Pizzero","q":3.0},{"i":"Orégano","q":3.0}]},{"id":"pizza-emp-mediana","titulo":"Empaquetado y acompañamiento: pizza mediana","tipo":"empaque","lineas":[{"i":"Caja de Pizza 25X25","q":1.0},{"i":"Bolsa Blanca 16X19","q":0.0},{"i":"Envase Salsero 1 Oz","q":2.0},{"i":"Papel Manteca","q":0.0},{"i":"Sticker de Seguridad","q":0.0},{"i":"Ají Pizzero","q":3.0},{"i":"Orégano","q":3.0}]},{"id":"pizza-emp-familiar","titulo":"Empaquetado y acompañamiento: pizza familiar","tipo":"empaque","lineas":[{"i":"Caja de Pizza 35X35","q":1.0},{"i":"Bolsa Blanca 16X19","q":0.0},{"i":"Envase Salsero 1 Oz","q":2.0},{"i":"Papel Manteca","q":0.0},{"i":"Sticker de Seguridad","q":0.0},{"i":"Ají Pizzero","q":3.0},{"i":"Orégano","q":3.0}]},{"id":"pizza-emp-superfamiliar","titulo":"Empaquetado y acompañamiento: pizza super familiar","tipo":"empaque","lineas":[{"i":"Caja de Pizza 40X40","q":0.0},{"i":"Bolsa Blanca 21X24","q":0.0},{"i":"Envase Salsero 1 Oz","q":2.0},{"i":"Papel Manteca","q":0.0},{"i":"Sticker de Seguridad","q":0.0},{"i":"Ají Pizzero","q":3.0},{"i":"Orégano","q":3.0}]},{"id":"pizza-salsa","titulo":"Salsa de tomate (referencia)","tipo":"receta","lineas":[{"i":"Tomate","q":0.0},{"i":"Cebolla","q":0.0},{"i":"Orégano","q":0.0},{"i":"Sal Marina Emsa Mesa Bolsa","q":0.0},{"i":"Aceite Vegetal Primor Premium","q":0.0}]},{"id":"pizza-emp-tajada","titulo":"Empaquetado por tajada","tipo":"empaque","lineas":[{"i":"Bandeja para Porción de Pizza","q":1.0},{"i":"Bolsa Plástica Alfa 2(1/2)x8","q":2.0},{"i":"Bolsa Kraft #4","q":1.0}]},{"id":"pizza-acomp-tajada","titulo":"Acompañamiento por tajada","tipo":"empaque","lineas":[{"i":"Ají Pizzero","q":3},{"i":"Orégano","q":3}]}]},"productos":[{"id":"lasana-porcion","fam":"lasana","nombre":"Porción de lasaña","sub":"","costo":[{"b":"lasana-receta","div":"rinde"}],"empaque":[{"b":"lasana-empaque"}],"precio":25.0},{"id":"molle-porcion","fam":"mollejitas","nombre":"Porción de mollejitas (12)","sub":"","costo":[{"b":"molle-platillo"}],"empaque":[{"b":"molle-empaque"},{"b":"molle-acomp"}],"precio":0.0},{"id":"jug-molde","fam":"jugos","nombre":"Pan de molde con jamón y queso","sub":"","costo":[{"b":"jug-molde"}],"empaque":[{"b":"jug-emp-sand"}],"precio":6.0},{"id":"jug-pollo","fam":"jugos","nombre":"Pan con pollo","sub":"","costo":[{"b":"jug-pollo"}],"empaque":[{"b":"jug-emp-sand"},{"b":"jug-acomp-sand"}],"precio":6.5},{"id":"jug-vaso-jugo","fam":"jugos","nombre":"Vaso de jugo combinado","sub":"","costo":[{"b":"jug-jugo","div":"rinde"}],"empaque":[{"b":"jug-emp-jugos"}],"precio":5.0},{"id":"jug-vaso-chicha","fam":"jugos","nombre":"Vaso de chicha morada","sub":"","costo":[{"b":"jug-chicha","div":"rinde"}],"empaque":[{"b":"jug-emp-jugos"}],"precio":4.0},{"id":"jug-jarra-chicha","fam":"jugos","nombre":"Jarra de litro de chicha morada","sub":"","costo":[{"b":"jug-chicha","div":"rinde","mult":3}],"empaque":[{"b":"jug-emp-jarra"}],"precio":12.0},{"id":"jug-cafe","fam":"jugos","nombre":"Café","sub":"","costo":[{"b":"jug-cafe"}],"empaque":[{"b":"jug-emp-cafe"}],"precio":3.0},{"id":"pollo-entero","fam":"pollo","nombre":"Pollo al horno artesanal entero","sub":"Entero","costo":[{"b":"pollo-entero-base"},{"b":"pollo-entero-ensalada"},{"b":"pollo-entero-papas"}],"empaque":[{"b":"pollo-entero-emp"},{"b":"pollo-entero-acomp"}],"precio":68.0},{"id":"pollo-medio","fam":"pollo","nombre":"1/2 pollo al horno artesanal","sub":"Medio","costo":[{"b":"pollo-medio-base"},{"b":"pollo-medio-ensalada"},{"b":"pollo-medio-papas"}],"empaque":[{"b":"pollo-medio-emp"},{"b":"pollo-medio-acomp"}],"precio":35.0},{"id":"pollo-cuarto","fam":"pollo","nombre":"1/4 pollo al horno artesanal","sub":"Cuarto","costo":[{"b":"pollo-cuarto-base"},{"b":"pollo-cuarto-ensalada"},{"b":"pollo-cuarto-papas"}],"empaque":[{"b":"pollo-cuarto-emp"},{"b":"pollo-cuarto-acomp"}],"precio":24.0},{"id":"pic-porcion","fam":"picarones","nombre":"Picarones porción 4","sub":"","costo":[{"b":"pic-receta","div":"rinde","mult":4},{"b":"pic-dulce","div":"rinde","mult":4}],"empaque":[{"b":"pic-empaque"}],"precio":4.0},{"id":"papa-porcion","fam":"papa","nombre":"Papa rellena porción","sub":"","costo":[{"b":"papa-receta","div":"rinde"}],"empaque":[{"b":"papa-empaque"},{"b":"papa-acomp"}],"precio":3.5},{"id":"ajo-6","fam":"panajo","nombre":"Pan al ajo (6 porciones)","sub":"","costo":[{"b":"ajo-receta"}],"empaque":[{"b":"ajo-empaque"}],"precio":6.0}],"pizzas":{"tamanos":[{"id":"personal","nombre":"Personal"},{"id":"mediana","nombre":"Mediana"},{"id":"familiar","nombre":"Familiar"},{"id":"superfamiliar","nombre":"Super familiar"}],"masaG":{"personal":150.0,"mediana":250.0,"familiar":450.0,"superfamiliar":0.0},"matrices":{"personal|unico":{"cols":["Pomarola","Queso Mozzarella","Queso Paria","Jamon","Tira de Tocino","Chorizo","Pepperoni","Trozos de Pechuga","Rodaja de Piña","Aceituna Verde","Aceituna Negra","Hoja de Espinaca","Cebolla","Tomate","Tira de Pimenton","Champiñon"],"filas":[{"s":"Americana","g":[30.0,84.0,5.0,15.0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana","g":[30.0,84.0,5.0,7.5,0,0,0,0,37.0,0,0,0,0,0,0,0]},{"s":"Pepperoni","g":[30.0,84.0,5.0,0,0,0,18.0,0,0,0,0,0,0,0,0,0]},{"s":"Chorizo","g":[30.0,84.0,5.0,0,0,20.0,0,0,0,0,0,0,0,0,0,0]}]},"mediana|unico":{"cols":["Pomarola","Queso Mozzarella","Queso Paria","Jamon","Tira de Tocino","Chorizo","Pepperoni","Trozos de Pechuga","Rodaja de Piña","Aceituna Verde","Aceituna Negra","Hoja de Espinaca","Cebolla","Tomate","Tira de Pimenton","Champiñon"],"filas":[{"s":"Americana","g":[30.0,130.0,10.0,22.5,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana","g":[30.0,130.0,10.0,22.5,0,0,0,0,46.25,0,0,0,0,0,0,0]},{"s":"Pepperoni","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Chorizo","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Especial","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pechugon","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,9.0,50.0,37.5,72.5,48.0,18.0]},{"s":"Champiñones","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]}]},"familiar|unico":{"cols":["Pomarola","Queso Mozzarella","Queso Paria","Jamon","Tira de Tocino","Chorizo","Pepperoni","Trozos de Pechuga","Rodaja de Piña","Aceituna Verde","Aceituna Negra","Hoja de Espinaca","Cebolla","Tomate","Tira de Pimenton","Champiñon"],"filas":[{"s":"Americana","g":[40.0,180.0,10.0,30.0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni","g":[40.0,180.0,10.0,0,0,0,42.0,0,0,0,0,0,0,0,0,0]},{"s":"Chorizo","g":[40.0,180.0,10.0,0,0,80.0,0,0,0,0,0,0,0,0,0,0]},{"s":"Especial","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pechugon","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Champiñones","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]}]},"superfamiliar|unico":{"cols":["Pomarola","Queso Mozzarella","Queso Paria","Jamon","Tira de Tocino","Chorizo","Pepperoni","Trozos de Pechuga","Rodaja de Piña","Aceituna Verde","Aceituna Negra","Hoja de Espinaca","Cebolla","Tomate","Tira de Pimenton","Champiñon"],"filas":[{"s":"Americana","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Chorizo","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Especial","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pechugon","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Champiñones","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]}]},"mediana|dos":{"cols":["Pomarola","Queso Mozzarella","Queso Paria","Jamon","Tira de Tocino","Chorizo","Pepperoni","Trozos de Pechuga","Rodaja de Piña","Aceituna Verde","Aceituna Negra","Hoja de Espinaca","Cebolla","Tomate","Tira de Pimenton","Champiñon"],"filas":[{"s":"Americana-Hawaiana","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Pepperoni","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Vegetariana","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Pechugon","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Especial","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Chorizo","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Champiñones","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Pepperoni","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Vegetariana","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Pechugon","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Especial","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Chorizo","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Champiñones","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Vegetariana","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Pechugon","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Especial","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Chorizo","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Champiñones","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana-Pechugon","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana-Especial","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana-Chorizo","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana-Champiñones","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pechugon-Especial","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pechugon-Chorizo","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pechugon-Champiñones","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Especial-Chorizo","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Especial-Champiñones","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Chorizo-Champiñones","g":[30.0,130.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]}]},"familiar|dos":{"cols":["Pomarola","Queso Mozzarella","Queso Paria","Jamon","Tira de Tocino","Chorizo","Pepperoni","Trozos de Pechuga","Rodaja de Piña","Aceituna Verde","Aceituna Negra","Hoja de Espinaca","Cebolla","Tomate","Tira de Pimenton","Champiñon"],"filas":[{"s":"Americana-Hawaiana","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Pepperoni","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Vegetariana","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Pechugon","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Especial","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Chorizo","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Champiñones","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Pepperoni","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Vegetariana","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Pechugon","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Especial","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Chorizo","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Champiñones","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Vegetariana","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Pechugon","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Especial","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Chorizo","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Champiñones","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana-Pechugon","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana-Especial","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana-Chorizo","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana-Champiñones","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pechugon-Especial","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pechugon-Chorizo","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pechugon-Champiñones","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Especial-Chorizo","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Especial-Champiñones","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Chorizo-Champiñones","g":[40.0,180.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]}]},"superfamiliar|dos":{"cols":["Pomarola","Queso Mozzarella","Queso Paria","Jamon","Tira de Tocino","Chorizo","Pepperoni","Trozos de Pechuga","Rodaja de Piña","Aceituna Verde","Aceituna Negra","Hoja de Espinaca","Cebolla","Tomate","Tira de Pimenton","Champiñon"],"filas":[{"s":"Americana-Hawaiana","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Pepperoni","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Vegetariana","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Pechugon","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Especial","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Chorizo","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Americana-Champiñones","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Pepperoni","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Vegetariana","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Pechugon","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Especial","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Chorizo","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Hawaiana-Champiñones","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Vegetariana","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Pechugon","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Especial","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Chorizo","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni-Champiñones","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana-Pechugon","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana-Especial","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana-Chorizo","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Vegetariana-Champiñones","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pechugon-Especial","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pechugon-Chorizo","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pechugon-Champiñones","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Especial-Chorizo","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Especial-Champiñones","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Chorizo-Champiñones","g":[72.5,210.0,10.0,0,0,0,0,0,0,0,0,0,0,0,0,0]}]}},"tajada":{"cols":["Pomarola","Queso Mozzarella","Queso Paria","Jamon","Tira de Tocino","Chorizo","Pepperoni","Trozos de Pechuga","Rodaja de Piña","Aceituna Verde","Aceituna Negra","Hoja de Espinaca","Cebolla","Tomate","Tira de Pimenton","Champiñon"],"filas":[{"s":"Americana","g":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Pepperoni","g":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Chorizo","g":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"s":"Piña","g":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],"tajadasPorPizza":8,"masaTamano":"familiar"},"carta":{"Americana":{"personal":10.0,"mediana":20.0,"familiar":32.0,"superfamiliar":0.0},"Hawaiana":{"personal":13.0,"mediana":24.0,"familiar":37.0,"superfamiliar":0.0},"Pepperoni":{"personal":10.0,"mediana":20.0,"familiar":32.0,"superfamiliar":0.0},"Chorizo":{"personal":12.0,"mediana":22.0,"familiar":35.0,"superfamiliar":0.0},"Especial":{"personal":0.0,"mediana":25.0,"familiar":40.0,"superfamiliar":0.0},"Pechugon":{"personal":0.0,"mediana":25.0,"familiar":40.0,"superfamiliar":0.0},"Vegetariana":{"personal":0.0,"mediana":24.0,"familiar":37.0,"superfamiliar":0.0},"Champiñones":{"personal":0.0,"mediana":24.0,"familiar":37.0,"superfamiliar":0.0},"Dos Sabores":{"personal":0.0,"mediana":30.0,"familiar":42.0,"superfamiliar":0.0}},"cartaTajada":{"Americana":5.0,"Pepperoni":5.0,"Chorizo":5.0,"Piña":0.0}},"pasteles":{"platano":{"nombre":"Pastel de plátano con chispas de chocolate","bloque":"pas-platano","tajadas":12,"precios":{"entero":40.0,"tajada":3.0,"mayor":35.0}},"arandano":{"nombre":"Pastel de arándano","bloque":"pas-arandano","tajadas":12,"precios":{"entero":35.0,"tajada":3.0,"mayor":30.0}},"vainilla":{"nombre":"Pastel de vainilla","bloque":"pas-vainilla","tajadas":12,"precios":{"entero":35.0,"tajada":2.5,"mayor":30.0}},"pina":{"nombre":"Pastel de piña","bloque":"pas-pina","tajadas":12,"precios":{"entero":35.0,"tajada":3.5,"mayor":30.0}},"naranja":{"nombre":"Pastel de naranja","bloque":"pas-naranja","tajadas":12,"precios":{"entero":40.0,"tajada":3.0,"mayor":35.0}}},"bebidas":[{"nombre":"Inca Kola 1 Lt.","costo":5.0,"precio":6.0},{"nombre":"Coca Cola 1 Lt.","costo":5.0,"precio":6.0},{"nombre":"Pepsi 1 Lt.","costo":4.0,"precio":0},{"nombre":"Inca Kola 1.5 Lt.","costo":7.5,"precio":8.0},{"nombre":"Coca Cola 1.5 Lt.","costo":7.5,"precio":8.0},{"nombre":"Pepsi 1.5 Lt.","costo":7.0,"precio":0},{"nombre":"Inca Kola 500 ml.","costo":3.0,"precio":0},{"nombre":"Coca Cola 500 ml.","costo":3.0,"precio":0},{"nombre":"Pepsi 500 ml.","costo":3.0,"precio":0}]};
+
+</script>
+  <script>
+/* Motor de cálculo de Diletto Artesanal.
+   Sin dependencias del DOM: recibe el estado y devuelve costos, precios y márgenes.
+   Regla de costo de un insumo: cantidad usada × (precio de compra ÷ cantidad comprada).
+   Los costos indirectos (luz, gas, agua, transporte, etc.) NO forman parte de ningún cálculo. */
+(function (root) {
+  'use strict';
+
+  const norm = (s) => String(s == null ? '' : s).trim().replace(/\s+/g, ' ').toLowerCase();
+  const num = (v) => {
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+    const n = parseFloat(String(v == null ? '' : v).replace(',', '.'));
+    return Number.isFinite(n) ? n : 0;
+  };
+  const slug = (s) => norm(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+  const Engine = {
+    norm, num, slug,
+    data: null,          // datos originales (DILETTO_DATA)
+    state: null,         // estado editable
+    rev: 0,              // se incrementa con cada cambio para invalidar cachés
+    _cache: {},
+
+    init(data, state) { this.data = data; this.state = state; this.touch(); },
+    touch() { this.rev++; this._cache = {}; },
+    memo(key, fn) {
+      const c = this._cache;
+      if (!(key in c)) c[key] = fn();
+      return c[key];
+    },
+
+    /* ---------- insumos ---------- */
+    index(fam) {
+      return this.memo('idx:' + fam, () => {
+        const m = new Map();
+        const list = (this.state.insumos[fam] || []);
+        list.forEach((it) => { const k = norm(it.p); if (k && !m.has(k)) m.set(k, it); });
+        list.forEach((it) => { const k = norm(it.pu); if (k && !m.has(k)) m.set(k, it); });
+        return m;
+      });
+    },
+    // precio por unidad base (g, ml o UND). null si el insumo no existe.
+    unitPrice(fam, name) {
+      const it = this.index(fam).get(norm(name));
+      if (!it) return null;
+      const q = num(it.q);
+      return q > 0 ? num(it.$) / q : 0;
+    },
+    insumoUnidad(fam, name) {
+      const it = this.index(fam).get(norm(name));
+      return it ? (it.u || '') : '';
+    },
+
+    /* ---------- bloques (recetas, empaques, acompañamientos) ---------- */
+    blockMap() {
+      return this.memo('blocks', () => {
+        const m = new Map();
+        Object.keys(this.state.bloques).forEach((fam) => {
+          this.state.bloques[fam].forEach((b) => m.set(b.id, { fam, block: b }));
+        });
+        return m;
+      });
+    },
+    block(id) { const e = this.blockMap().get(id); return e ? e.block : null; },
+    lineCost(fam, ln) {
+      if (ln.s) return 0;
+      if (ln.ref) {
+        const e = this.blockMap().get(ln.ref);
+        return e ? this.perUnit(ln.ref) * num(ln.q) : 0;
+      }
+      const p = this.unitPrice(fam, ln.i);
+      return p == null ? 0 : p * num(ln.q);
+    },
+    lineMissing(fam, ln) { return !ln.s && !ln.ref && !!ln.i && this.unitPrice(fam, ln.i) == null; },
+    blockTotal(id) {
+      return this.memo('bt:' + id, () => {
+        const e = this.blockMap().get(id);
+        if (!e) return 0;
+        return e.block.lineas.reduce((a, ln) => a + this.lineCost(e.fam, ln), 0);
+      });
+    },
+    perUnit(id) {
+      const e = this.blockMap().get(id);
+      if (!e) return 0;
+      const r = num(e.block.rinde);
+      return r > 0 ? this.blockTotal(id) / r : this.blockTotal(id);
+    },
+    termCost(t) {
+      const e = this.blockMap().get(t.b);
+      if (!e) return 0;
+      let div = 1;
+      if (t.div === 'rinde') div = num(e.block.rinde) || 1;
+      else if (t.div) div = num(t.div) || 1;
+      return (this.blockTotal(t.b) / div) * (t.mult == null ? 1 : t.mult);
+    },
+    termsCost(list) { return (list || []).reduce((a, t) => a + this.termCost(t), 0); },
+
+    /* ---------- pizzas ---------- */
+    masaGramo() {
+      const e = this.blockMap().get('pizza-masa');
+      const r = e ? num(e.block.rinde) : 0;
+      return r > 0 ? this.blockTotal('pizza-masa') / r : 0;
+    },
+    masaCosto(sizeId) { return num(this.state.pizzas.masaG[sizeId]) * this.masaGramo(); },
+    matrixRowCost(cols, g) {
+      let t = 0;
+      for (let j = 0; j < cols.length; j++) {
+        const q = num(g[j]);
+        if (!q) continue;
+        const p = this.unitPrice('pizzas', cols[j]);
+        if (p != null) t += p * q;
+      }
+      return t;
+    },
+    matrixRowMissing(cols, g) {
+      const out = [];
+      for (let j = 0; j < cols.length; j++) if (num(g[j]) && this.unitPrice('pizzas', cols[j]) == null) out.push(cols[j]);
+      return out;
+    },
+
+    /* ---------- catálogo de productos ---------- */
+    defaultPrice(pk) {
+      const d = this.data;
+      let m;
+      if ((m = /^p:(.+)$/.exec(pk))) { const p = d.productos.find((x) => x.id === m[1]); return p ? p.precio : 0; }
+      if ((m = /^pz:([a-z]+):(.+)$/.exec(pk))) {
+        const row = Object.keys(d.pizzas.carta).find((k) => slug(k) === m[2]);
+        return row ? num(d.pizzas.carta[row][m[1]]) : 0;
+      }
+      if ((m = /^pzdos:([a-z]+)$/.exec(pk))) { const r = d.pizzas.carta['Dos Sabores']; return r ? num(r[m[1]]) : 0; }
+      if ((m = /^pt:(.+)$/.exec(pk))) {
+        const row = Object.keys(d.pizzas.cartaTajada).find((k) => slug(k) === m[1]);
+        return row ? num(d.pizzas.cartaTajada[row]) : 0;
+      }
+      if ((m = /^pa:([a-z]+):([a-z]+)$/.exec(pk))) { const p = d.pasteles[m[1]]; return p ? num(p.precios[m[2]]) : 0; }
+      if ((m = /^beb:(\d+)$/.exec(pk))) { const b = d.bebidas[+m[1]]; return b ? num(b.precio) : 0; }
+      return 0;
+    },
+    precio(pk) {
+      const v = this.state.precios[pk];
+      return v == null ? this.defaultPrice(pk) : num(v);
+    },
+
+    products() {
+      return this.memo('products', () => {
+        const S = this.state, D = this.data, out = [];
+        const famNombre = {}; const famGrupo = {};
+        D.familias.forEach((f) => { famNombre[f.id] = f.nombre; famGrupo[f.id] = f.grupo; });
+        const add = (o) => {
+          o.grupo = famGrupo[o.fam];
+          o.famNombre = famNombre[o.fam];
+          o.precio = this.precio(o.pk);
+          o.costoLlevar = o.costo + o.empaque;
+          o.costoConsumo = o.costo;
+          o.utilLlevar = o.precio - o.costoLlevar;
+          o.utilConsumo = o.precio - o.costoConsumo;
+          o.margenLlevar = o.precio > 0 ? o.utilLlevar / o.precio : null;
+          o.margenConsumo = o.precio > 0 ? o.utilConsumo / o.precio : null;
+          out.push(o);
+        };
+
+        // Productos con receta directa
+        D.productos.forEach((p) => add({
+          id: p.id, pk: 'p:' + p.id, fam: p.fam, nombre: p.nombre, seccion: '',
+          costo: this.termsCost(p.costo), empaque: this.termsCost(p.empaque),
+        }));
+
+        // Pizzas
+        const P = S.pizzas;
+        P.tamanos.forEach((tam) => {
+          const mu = P.matrices[tam.id + '|unico'];
+          if (mu) mu.filas.forEach((f) => add({
+            id: 'pz-' + tam.id + '-u-' + slug(f.s), pk: 'pz:' + tam.id + ':' + slug(f.s), fam: 'pizzas',
+            nombre: 'Pizza ' + tam.nombre.toLowerCase() + ' ' + f.s.toLowerCase(), seccion: 'Sabor único · ' + tam.nombre,
+            costo: this.matrixRowCost(mu.cols, f.g) + this.masaCosto(tam.id),
+            empaque: this.blockTotal('pizza-emp-' + tam.id),
+          }));
+          const md = P.matrices[tam.id + '|dos'];
+          if (md) md.filas.forEach((f) => add({
+            id: 'pz-' + tam.id + '-d-' + slug(f.s), pk: 'pzdos:' + tam.id, fam: 'pizzas',
+            nombre: 'Pizza ' + tam.nombre.toLowerCase() + ' ' + f.s.toLowerCase(), seccion: 'Dos sabores · ' + tam.nombre,
+            costo: this.matrixRowCost(md.cols, f.g) + this.masaCosto(tam.id),
+            empaque: this.blockTotal('pizza-emp-' + tam.id),
+          }));
+        });
+        const T = P.tajada;
+        const masaTajada = T.tajadasPorPizza > 0 ? this.masaCosto(T.masaTamano) / T.tajadasPorPizza : 0;
+        const acompTajada = this.blockTotal('pizza-acomp-tajada');
+        T.filas.forEach((f) => add({
+          id: 'pt-' + slug(f.s), pk: 'pt:' + slug(f.s), fam: 'pizzas', nombre: 'Tajada de pizza ' + f.s.toLowerCase(),
+          seccion: 'Por tajada', costo: this.matrixRowCost(T.cols, f.g) + masaTajada + acompTajada,
+          empaque: this.blockTotal('pizza-emp-tajada'),
+        }));
+
+        // Pasteles
+        const empE = this.blockTotal('pas-emp-entero'), empT = this.blockTotal('pas-emp-tajada');
+        Object.keys(D.pasteles).forEach((pid) => {
+          const d = D.pasteles[pid], st = S.pasteles[pid] || { tajadas: d.tajadas };
+          const c = this.blockTotal(d.bloque);
+          const nt = num(st.tajadas) > 0 ? num(st.tajadas) : 1;
+          add({ id: 'pa-' + pid + '-entero', pk: 'pa:' + pid + ':entero', fam: 'pasteles', nombre: d.nombre, seccion: 'Entero', costo: c + empE, empaque: 0 });
+          add({ id: 'pa-' + pid + '-tajada', pk: 'pa:' + pid + ':tajada', fam: 'pasteles', nombre: 'Tajada de ' + d.nombre.toLowerCase(), seccion: 'Por tajada', costo: c / nt, empaque: empT });
+          add({ id: 'pa-' + pid + '-mayor', pk: 'pa:' + pid + ':mayor', fam: 'pasteles', nombre: d.nombre + ' (por mayor, c/u)', seccion: 'Por mayor (desde 3)', costo: c + empE, empaque: 0 });
+        });
+
+        // Bebidas (costo de compra = insumo de la familia "bebidas")
+        D.bebidas.forEach((b, i) => {
+          const up = this.unitPrice('bebidas', b.nombre);
+          add({ id: 'beb-' + i, pk: 'beb:' + i, fam: 'bebidas', nombre: b.nombre, seccion: '', costo: up == null ? 0 : up, empaque: 0 });
+        });
+        return out;
+      });
+    },
+    productById(id) { return this.products().find((p) => p.id === id) || null; },
+
+    /* ---------- ventas ---------- */
+    saleLine(ln) {
+      const p = this.productById(ln.pid);
+      if (!p) return null;
+      const q = num(ln.q);
+      const precio = ln.precio == null || ln.precio === '' ? p.precio : num(ln.precio);
+      const costoU = ln.mod === 'llevar' ? p.costoLlevar : p.costoConsumo;
+      const venta = precio * q, costo = costoU * q, util = venta - costo;
+      return { p, q, precio, costoU, venta, costo, util, margen: venta > 0 ? util / venta : null };
+    },
+  };
+
+  root.DLEngine = Engine;
+  if (typeof module !== 'undefined' && module.exports) module.exports = Engine;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+  <script>
+/* Utilidades de interfaz: creación de DOM, formatos, enlaces reactivos, avisos y diálogos. */
+(function () {
+  'use strict';
+  const DL = (window.DL = window.DL || {});
+  const E = window.DLEngine;
+
+  /* ---------- DOM ---------- */
+  DL.h = function h(tag, attrs, ...kids) {
+    const el = document.createElement(tag);
+    let value;
+    if (attrs) {
+      for (const k of Object.keys(attrs)) {
+        const v = attrs[k];
+        if (v == null || v === false) continue;
+        if (k === 'class') el.className = v;
+        else if (k === 'dataset') Object.assign(el.dataset, v);
+        else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+        else if (k === 'html') el.innerHTML = v; // solo para SVG estáticos propios
+        else if (k === 'value') value = v;
+        else if (k === 'checked' || k === 'disabled' || k === 'selected' || k === 'open') el[k] = !!v;
+        else if (k.slice(0, 2) === 'on' && typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v);
+        else el.setAttribute(k, v === true ? '' : v);
+      }
+    }
+    for (const kid of kids.flat(Infinity)) {
+      if (kid == null || kid === false) continue;
+      el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+    }
+    if (value !== undefined) el.value = value; // después de crear las opciones
+    return el;
+  };
+  const h = DL.h;
+  DL.clear = (el) => { while (el.firstChild) el.removeChild(el.firstChild); return el; };
+
+  /* ---------- Formatos ---------- */
+  const nf = (min, max) => new Intl.NumberFormat('es-PE', { minimumFractionDigits: min, maximumFractionDigits: max });
+  const nf2 = nf(2, 2), nf4 = nf(2, 4), nf1 = nf(0, 1), nf0 = nf(0, 0);
+  DL.fmt = {
+    money: (n) => 'S/ ' + nf2.format(Number.isFinite(n) ? n : 0),
+    money4: (n) => 'S/ ' + nf4.format(Number.isFinite(n) ? n : 0),
+    pct: (n) => (n == null || !Number.isFinite(n) ? '—' : nf1.format(n * 100) + ' %'),
+    int: (n) => nf0.format(Number.isFinite(n) ? n : 0),
+    dec: (n, max = 2) => nf(0, max).format(Number.isFinite(n) ? n : 0),
+    input: (n) => (!n ? '' : String(+Number(n).toFixed(4))),
+    date: (iso) => {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-').map(Number);
+      return d + ' ' + DL.MESES[m - 1].slice(0, 3).toLowerCase() + ' ' + y;
+    },
+    bytes: (b) => (b < 1024 ? b + ' B' : b < 1048576 ? nf1.format(b / 1024) + ' KB' : nf1.format(b / 1048576) + ' MB'),
+  };
+  DL.MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  DL.DIAS = ['Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  DL.DIA_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  DL.isoToday = () => {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  DL.isoParts = (iso) => { const [y, m, d] = iso.split('-').map(Number); return { y, m, d, dow: new Date(y, m - 1, d).getDay() }; };
+  DL.uid = () => (window.crypto && crypto.randomUUID ? crypto.randomUUID() : 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+
+  /* ---------- Enlaces reactivos ----------
+     Cada vista registra funciones que se reevalúan tras cualquier cambio de datos.
+     Así los totales se actualizan mientras se escribe, sin perder el foco. */
+  DL._binds = [];
+  DL.resetBinds = () => { DL._binds = []; };
+  DL.bind = (node, fn) => { DL._binds.push({ node, fn }); node.textContent = fn(); return node; };
+  DL.bindCls = (node, fn) => {
+    let prev = '';
+    const apply = () => { const c = fn() || ''; if (c !== prev) { if (prev) prev.split(' ').forEach((x) => x && node.classList.remove(x)); if (c) c.split(' ').forEach((x) => x && node.classList.add(x)); prev = c; } };
+    DL._binds.push({ node, apply }); apply(); return node;
+  };
+  DL.bindFn = (fn) => { DL._binds.push({ fn, call: true }); fn(); };
+  DL.refresh = () => {
+    DL._binds = DL._binds.filter((b) => b.call || b.node.isConnected);
+    DL._binds.forEach((b) => {
+      try {
+        if (b.call) b.fn();
+        else if (b.apply) b.apply();
+        else { const t = b.fn(); if (b.node.textContent !== t) b.node.textContent = t; }
+      } catch (e) { console.error(e); }
+    });
+  };
+
+  /* Clase de color para un margen según el margen objetivo */
+  DL.margenClase = (m, precio) => {
+    if (!precio) return 'm-nulo';
+    const obj = DL.Store.state.config.margenObjetivo;
+    if (m < 0) return 'm-neg';
+    return m >= obj ? 'm-ok' : 'm-bajo';
+  };
+  DL.badgeMargen = (getMargen, getPrecio) => {
+    const s = h('span', { class: 'insignia' });
+    DL.bind(s, () => DL.fmt.pct(getMargen()));
+    DL.bindCls(s, () => DL.margenClase(getMargen(), getPrecio()));
+    return s;
+  };
+
+  /* ---------- Campos ---------- */
+  // Campo numérico: escribe en el estado con cada tecla (onInput) y normaliza al salir.
+  DL.numInput = ({ value, onInput, onChange, cls = '', label = '', placeholder = '0', width }) => {
+    const inp = h('input', {
+      type: 'text', inputmode: 'decimal', autocomplete: 'off', class: 'celda num ' + cls, placeholder, 'aria-label': label,
+      value: DL.fmt.input(value),
+      onfocus: (e) => e.target.select(),
+      oninput: (e) => { if (onInput) onInput(E.num(e.target.value), e); },
+      onchange: (e) => { const v = E.num(e.target.value); e.target.value = DL.fmt.input(v); if (onChange) onChange(v, e); },
+    });
+    if (width) inp.style.width = width;
+    return inp;
+  };
+  DL.textInput = ({ value, onChange, onInput, cls = '', label = '', placeholder = '', list }) =>
+    h('input', {
+      type: 'text', autocomplete: 'off', class: 'celda ' + cls, placeholder, 'aria-label': label, list, value: value || '',
+      oninput: onInput ? (e) => onInput(e.target.value, e) : null,
+      onchange: onChange ? (e) => onChange(e.target.value.trim(), e) : null,
+    });
+  DL.select = ({ value, options, onChange, cls = '', label = '' }) =>
+    h('select', { class: 'celda sel ' + cls, 'aria-label': label, value, onchange: (e) => onChange(e.target.value, e) },
+      options.map((o) => { const v = typeof o === 'string' ? o : o.v, t = typeof o === 'string' ? o : o.t; return h('option', { value: v }, t); }));
+
+  DL.iconBtn = (icon, label, onClick, cls = '') =>
+    h('button', { type: 'button', class: 'btn-icono ' + cls, 'aria-label': label, title: label, onclick: onClick, html: icon });
+
+  /* Pastillas de familias, agrupadas como en el menú del Excel */
+  DL.famPills = ({ active, onPick, exclude = [], todos = false }) => {
+    const D = window.DILETTO_DATA;
+    const wrap = h('div', { class: 'familias', role: 'tablist' });
+    if (todos) wrap.append(h('div', { class: 'fam-grupo' }, h('button', { type: 'button', role: 'tab', 'aria-selected': active === '*' ? 'true' : 'false', class: 'pildora' + (active === '*' ? ' activa' : ''), onclick: () => onPick('*') }, 'Todos')));
+    D.grupos.forEach((g) => {
+      const fams = D.familias.filter((f) => f.grupo === g && !exclude.includes(f.id));
+      if (!fams.length) return;
+      wrap.append(h('div', { class: 'fam-grupo' }, h('span', { class: 'fam-grupo-nombre' }, g),
+        h('div', { class: 'fam-lista' }, fams.map((f) =>
+          h('button', { type: 'button', role: 'tab', 'aria-selected': active === f.id ? 'true' : 'false', class: 'pildora' + (active === f.id ? ' activa' : ''), onclick: () => onPick(f.id) }, f.nombre)))));
+    });
+    return wrap;
+  };
+
+  DL.segmented = ({ value, options, onPick, label = '' }) =>
+    h('div', { class: 'segmentos', role: 'group', 'aria-label': label },
+      options.map((o) => h('button', { type: 'button', class: 'segmento' + (o.v === value ? ' activo' : ''), 'aria-pressed': o.v === value ? 'true' : 'false', onclick: () => onPick(o.v) }, o.t)));
+
+  DL.empty = (titulo, texto, accion) => h('div', { class: 'vacio' }, h('p', { class: 'vacio-titulo' }, titulo), texto ? h('p', { class: 'vacio-texto' }, texto) : null, accion || null);
+
+  /* ---------- Avisos y diálogos ---------- */
+  DL.toast = (msg, kind = '') => {
+    const host = document.getElementById('toasts');
+    if (!host) return;
+    const t = h('div', { class: 'aviso ' + kind, role: 'status' }, msg);
+    host.append(t);
+    setTimeout(() => t.classList.add('sale'), 3200);
+    setTimeout(() => t.remove(), 3600);
+  };
+  DL.confirm = ({ titulo, mensaje, ok = 'Confirmar', peligro = false }) =>
+    new Promise((resolve) => {
+      const dlg = h('dialog', { class: 'dialogo dialogo-chico' });
+      if (typeof dlg.showModal !== 'function') return resolve(window.confirm(titulo + '\n' + (mensaje || '')));
+      const done = (v) => { dlg.close(); dlg.remove(); resolve(v); };
+      dlg.append(h('h2', {}, titulo), mensaje ? h('p', {}, mensaje) : null,
+        h('div', { class: 'dialogo-pie' },
+          h('button', { type: 'button', class: 'btn', onclick: () => done(false) }, 'Cancelar'),
+          h('button', { type: 'button', class: 'btn ' + (peligro ? 'btn-peligro' : 'btn-primario'), onclick: () => done(true) }, ok)));
+      dlg.addEventListener('cancel', (e) => { e.preventDefault(); done(false); });
+      document.body.append(dlg);
+      dlg.showModal();
+    });
+
+  /* ---------- Iconos (SVG propios, trazo 1.6) ---------- */
+  const svg = (p) => '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>';
+  DL.icons = {
+    abarrotes: svg('<path d="M4 8l8-4 8 4v9l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v9"/>'),
+    produccion: svg('<path d="M5 11h14v6a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M8 11V9a4 4 0 0 1 8 0v2M3 11h18"/>'),
+    ventas: svg('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>'),
+    historial: svg('<path d="M4 5h16v4H4zM6 9v10h12V9"/><path d="M10 13h4"/>'),
+    carta: svg('<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M9 8h7M9 12h5"/>'),
+    mas: svg('<path d="M12 5v14M5 12h14"/>'),
+    x: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
+    mas_chico: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+    menos_chico: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>',
+    borrar: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+    mas_opciones: svg('<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>'),
+    subir: svg('<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>'),
+    pdf: svg('<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 14h6M9 17h4"/>'),
+    ojo: svg('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+    bajar: svg('<path d="M12 4v12M7 11l5 5 5-5M4 20h16"/>'),
+    editar: svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'),
+    chevron: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>',
+    imprimir: svg('<path d="M7 9V3h10v6M7 17H5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2"/><path d="M7 14h10v7H7z"/>'),
+  };
+})();
+
+</script>
+  <script>
+/* Estado de la aplicación, persistencia (localStorage + IndexedDB para PDFs) y respaldos. */
+(function () {
+  'use strict';
+  const DL = window.DL;
+  const E = window.DLEngine;
+  const D = window.DILETTO_DATA;
+  const KEY = 'diletto.estado.v1';
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+
+  const Store = (DL.Store = { state: null, persistOK: true, _t: null });
+
+  function catalogState() {
+    return {
+      insumos: clone(D.insumos),
+      bloques: clone(D.bloques),
+      pizzas: { tamanos: clone(D.pizzas.tamanos), masaG: clone(D.pizzas.masaG), matrices: clone(D.pizzas.matrices), tajada: clone(D.pizzas.tajada) },
+      pasteles: Object.fromEntries(Object.keys(D.pasteles).map((k) => [k, { tajadas: D.pasteles[k].tajadas }])),
+      precios: {},
+    };
+  }
+  Store.defaultState = () => Object.assign({
+    v: 1,
+    config: { margenObjetivo: 0.5 },
+    venta: { fecha: DL.isoToday(), lineas: [] },
+    cierres: [],
+    historial: [],
+    ui: {},
+  }, catalogState());
+
+  function merge(saved) {
+    const base = Store.defaultState();
+    if (!saved || typeof saved !== 'object') return base;
+    const s = Object.assign(base, saved);
+    // Garantiza estructuras mínimas si el guardado es antiguo o está incompleto
+    ['insumos', 'bloques', 'pizzas', 'pasteles', 'precios'].forEach((k) => { if (!saved[k]) s[k] = catalogState()[k]; });
+    s.config = Object.assign({ margenObjetivo: 0.5 }, saved.config || {});
+    s.venta = Object.assign({ fecha: DL.isoToday(), lineas: [] }, saved.venta || {});
+    if (!Array.isArray(s.venta.lineas)) s.venta.lineas = [];
+    if (!Array.isArray(s.cierres)) s.cierres = [];
+    if (!Array.isArray(s.historial)) s.historial = [];
+    if (!s.ui) s.ui = {};
+    return s;
+  }
+
+  Store.load = () => {
+    let saved = null;
+    try { const raw = localStorage.getItem(KEY); if (raw) saved = JSON.parse(raw); } catch (e) { Store.persistOK = false; }
+    Store.state = merge(saved);
+    E.init(D, Store.state);
+    return Store.state;
+  };
+
+  Store.save = () => {
+    try { localStorage.setItem(KEY, JSON.stringify(Store.state)); Store.persistOK = true; DL.setSaved && DL.setSaved(true); }
+    catch (e) { Store.persistOK = false; DL.setSaved && DL.setSaved(false); }
+  };
+  // Llamar después de cualquier modificación del estado.
+  Store.changed = () => {
+    E.touch();
+    DL.refresh();
+    DL.setSaved && DL.setSaved(null);
+    clearTimeout(Store._t);
+    Store._t = setTimeout(Store.save, 250);
+  };
+
+  // Restablece solo el catálogo (insumos, recetas, pizzas, precios). Conserva ventas, cierres y PDFs.
+  Store.resetCatalog = () => {
+    Object.assign(Store.state, catalogState());
+    E.init(D, Store.state);
+    Store.save();
+  };
+
+  /* ---------- Referencias de insumos ---------- */
+  Store.refCount = (fam, name) => {
+    const k = E.norm(name); let n = 0;
+    (Store.state.bloques[fam] || []).forEach((b) => b.lineas.forEach((l) => { if (l.i && E.norm(l.i) === k) n++; }));
+    if (fam === 'pizzas') {
+      const P = Store.state.pizzas;
+      Object.values(P.matrices).forEach((m) => { const j = m.cols.findIndex((c) => E.norm(c) === k); if (j >= 0) m.filas.forEach((f) => { if (E.num(f.g[j])) n++; }); });
+      const j = P.tajada.cols.findIndex((c) => E.norm(c) === k); if (j >= 0) P.tajada.filas.forEach((f) => { if (E.num(f.g[j])) n++; });
+    }
+    return n;
+  };
+  Store.renameInsumo = (fam, oldName, newName) => {
+    const k = E.norm(oldName);
+    if (!k || k === E.norm(newName)) return;
+    (Store.state.bloques[fam] || []).forEach((b) => b.lineas.forEach((l) => { if (l.i && E.norm(l.i) === k) l.i = newName; }));
+    if (fam === 'pizzas') {
+      const P = Store.state.pizzas;
+      const fix = (m) => { m.cols = m.cols.map((c) => (E.norm(c) === k ? newName : c)); };
+      Object.values(P.matrices).forEach(fix); fix(P.tajada);
+    }
+  };
+
+  /* ---------- PDFs: IndexedDB con respaldo en memoria ---------- */
+  const mem = new Map();
+  const pdf = (Store.pdf = { persistent: true, _db: null });
+  pdf.db = () => {
+    if (pdf._db) return pdf._db;
+    pdf._db = new Promise((res, rej) => {
+      if (!window.indexedDB) return rej(new Error('IndexedDB no disponible'));
+      const r = indexedDB.open('diletto-pdfs', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('pdfs');
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    }).catch((e) => { pdf.persistent = false; return null; });
+    return pdf._db;
+  };
+  const tx = (mode, fn) => pdf.db().then((db) => new Promise((res, rej) => {
+    if (!db) return res(fn(null));
+    const t = db.transaction('pdfs', mode); const st = t.objectStore('pdfs');
+    const r = fn(st);
+    t.oncomplete = () => res(r && r.result !== undefined ? r.result : undefined);
+    t.onerror = () => rej(t.error);
+  }));
+  pdf.put = (id, blob) => tx('readwrite', (st) => { if (!st) { mem.set(id, blob); return null; } return st.put(blob, id); });
+  pdf.get = (id) => pdf.db().then((db) => new Promise((res) => {
+    if (!db) return res(mem.get(id) || null);
+    const r = db.transaction('pdfs', 'readonly').objectStore('pdfs').get(id);
+    r.onsuccess = () => res(r.result || null); r.onerror = () => res(null);
+  }));
+  pdf.del = (id) => tx('readwrite', (st) => { if (!st) { mem.delete(id); return null; } return st.delete(id); });
+  pdf.persistRequest = () => { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* opcional */ } };
+
+  /* ---------- Respaldo ---------- */
+  const blobToB64 = (blob) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
+  const b64ToBlob = (b64, type) => { const bin = atob(b64); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return new Blob([a], { type: type || 'application/pdf' }); };
+
+  Store.exportBackup = async () => {
+    const pdfs = [];
+    for (const m of Store.state.historial) {
+      const b = await pdf.get(m.id);
+      if (b) pdfs.push({ id: m.id, type: b.type, data: await blobToB64(b) });
+    }
+    return { app: 'diletto-artesanal', version: 1, exportadoEn: new Date().toISOString(), state: Store.state, pdfs };
+  };
+  Store.importBackup = async (obj) => {
+    if (!obj || obj.app !== 'diletto-artesanal' || !obj.state) throw new Error('El archivo no es un respaldo de Diletto Artesanal.');
+    Store.state = merge(obj.state);
+    E.init(D, Store.state);
+    for (const p of obj.pdfs || []) await pdf.put(p.id, b64ToBlob(p.data, p.type));
+    Store.save();
+  };
+  Store.download = (name, blob) => {
+    const a = DL.h('a', { href: URL.createObjectURL(blob), download: name });
+    document.body.append(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  };
+})();
+
+</script>
+  <script>
+/* Módulo 1: Abarrotes y materiales */
+(function () {
+  'use strict';
+  const DL = window.DL, h = DL.h, E = window.DLEngine, F = DL.fmt;
+  DL.views = DL.views || {};
+  const local = { q: '', cat: '', sin: false };
+  const CAT_LABEL = { ABARROTES: 'Abarrotes', MATERIALES: 'Materiales', BEBIDAS: 'Bebidas' };
+  const UNITS = ['g', 'ml', 'UND', 'kg', 'L'];
+
+  DL.views.abarrotes = {
+    titulo: 'Abarrotes y materiales',
+    sub: 'Precios de compra de cada insumo. Al cambiar un precio se actualizan al instante los costos de producción y los márgenes.',
+    render(host) {
+      const st = DL.Store.state;
+      const fam = st.ui.abFam && st.insumos[st.ui.abFam] ? st.ui.abFam : 'pizzas';
+      st.ui.abFam = fam;
+      const list = st.insumos[fam];
+
+      host.append(DL.famPills({ active: fam, onPick: (id) => { st.ui.abFam = id; local.q = ''; local.cat = ''; local.sin = false; DL.rerender(); } }));
+
+      // Franja de indicadores
+      const kv = (label, fn, cls) => { const v = h('span', { class: 'banda-valor' }); DL.bind(v, fn); return h('div', { class: 'banda-item ' + (cls || '') }, h('span', { class: 'banda-etiqueta' }, label), v); };
+      const ver = () => list.filter((x) => x.v === 'SI').length;
+      const sinv = () => list.filter((x) => x.v === 'NO').length;
+      host.append(h('div', { class: 'banda' },
+        kv('Insumos registrados', () => F.int(list.length)),
+        kv('Verificados', () => F.int(ver())),
+        kv('Pendientes de verificar', () => F.int(sinv()), 'atencion')));
+
+      // Barra de herramientas
+      const cats = Array.from(new Set(list.map((x) => x.c)));
+      host.append(h('div', { class: 'barra' },
+        h('input', { type: 'search', class: 'buscar', placeholder: 'Buscar insumo', 'aria-label': 'Buscar insumo', value: local.q, oninput: (e) => { local.q = e.target.value; filtrar(); } }),
+        cats.length > 1 ? DL.select({ value: local.cat, label: 'Filtrar por categoría', options: [{ v: '', t: 'Todas las categorías' }].concat(cats.map((c) => ({ v: c, t: CAT_LABEL[c] || c }))), onChange: (v) => { local.cat = v; filtrar(); } }) : null,
+        h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: local.sin, onchange: (e) => { local.sin = e.target.checked; filtrar(); } }), 'Solo pendientes'),
+        h('span', { class: 'espacio' }),
+        h('button', { type: 'button', class: 'btn btn-primario', onclick: agregar }, h('span', { html: DL.icons.mas_chico }), 'Agregar insumo')));
+
+      const units = Array.from(new Set(UNITS.concat(list.map((x) => x.u).filter(Boolean))));
+      const cuerpo = h('tbody');
+      const filas = [];
+      list.forEach((it, i) => {
+        const unidadTxt = h('span', { class: 'sufijo' });
+        DL.bind(unidadTxt, () => { const q = E.num(it.q); return q > 0 ? F.money4(E.num(it.$) / q) + ' / ' + (it.u || 'und') : '—'; });
+        const ver = h('button', { type: 'button', class: 'chip-toggle', 'aria-pressed': it.v === 'SI' ? 'true' : 'false', onclick: (e) => {
+          it.v = it.v === 'SI' ? 'NO' : 'SI'; e.currentTarget.setAttribute('aria-pressed', it.v === 'SI' ? 'true' : 'false'); e.currentTarget.textContent = it.v === 'SI' ? 'Sí' : 'No'; e.currentTarget.closest('tr').dataset.v = it.v; DL.Store.changed();
+        } }, it.v === 'SI' ? 'Sí' : it.v === 'NO' ? 'No' : '—');
+        const tr = h('tr', { dataset: { q: E.norm(it.p + ' ' + it.pu), c: it.c, v: it.v } },
+          h('td', {}, DL.select({ value: it.c, label: 'Categoría', options: Array.from(new Set(['ABARROTES', 'MATERIALES', it.c])).map((c) => ({ v: c, t: CAT_LABEL[c] || c })), onChange: (v) => { it.c = v; tr.dataset.c = v; DL.Store.changed(); } })),
+          h('td', { class: 'col-nombre' }, DL.textInput({ value: it.p, label: 'Producto', placeholder: 'Nombre del insumo', onChange: (v) => {
+            if (v && v !== it.p) { DL.Store.renameInsumo(fam, it.p, v); it.p = v; tr.dataset.q = E.norm(it.p + ' ' + it.pu); DL.Store.changed(); }
+          } })),
+          h('td', {}, DL.numInput({ value: it.q, label: 'Cantidad comprada', onInput: (v) => { it.q = v; DL.Store.changed(); } })),
+          h('td', {}, DL.select({ value: it.u || 'g', label: 'Unidad', options: units, onChange: (v) => { it.u = v; DL.Store.changed(); } })),
+          h('td', {}, DL.numInput({ value: it.$, label: 'Precio de compra', placeholder: '0.00', onInput: (v) => { it.$ = v; DL.Store.changed(); } })),
+          h('td', { class: 'num tenue' }, unidadTxt),
+          h('td', { class: 'col-nombre' }, DL.textInput({ value: it.pu, label: 'Nombre por unidad', placeholder: 'Opcional', onChange: (v) => { it.pu = v; tr.dataset.q = E.norm(it.p + ' ' + it.pu); DL.Store.changed(); } })),
+          h('td', { class: 'centro' }, ver),
+          h('td', { class: 'acciones' }, DL.iconBtn(DL.icons.borrar, 'Eliminar insumo', async () => {
+            const n = DL.Store.refCount(fam, it.p);
+            const ok = await DL.confirm({ titulo: 'Eliminar "' + (it.p || 'insumo') + '"', mensaje: n ? 'Este insumo se usa en ' + n + ' líneas de recetas. Esas líneas quedarán sin precio.' : 'Esta acción no se puede deshacer.', ok: 'Eliminar', peligro: true });
+            if (ok) { list.splice(i, 1); DL.Store.changed(); DL.rerender(); }
+          }, 'borrar')));
+        filas.push(tr); cuerpo.append(tr);
+      });
+
+      function filtrar() {
+        const q = E.norm(local.q); let vis = 0;
+        filas.forEach((tr) => {
+          const ok = (!q || tr.dataset.q.includes(q)) && (!local.cat || tr.dataset.c === local.cat) && (!local.sin || tr.dataset.v === 'NO');
+          tr.hidden = !ok; if (ok) vis++;
+        });
+        vacio.hidden = vis > 0;
+      }
+      function agregar() {
+        list.push({ c: cats.includes('ABARROTES') || !cats.length ? 'ABARROTES' : cats[0], p: '', q: 1, u: 'g', $: 0, pu: '', qu: 0, v: 'NO' });
+        if (fam === 'bebidas') list[list.length - 1].c = 'BEBIDAS';
+        DL.Store.changed();
+        DL.rerender(() => { const rows = document.querySelectorAll('.tabla tbody tr'); const last = rows[rows.length - 1]; if (last) { last.scrollIntoView({ block: 'center' }); const i = last.querySelector('.col-nombre input'); if (i) i.focus(); } });
+      }
+
+      const vacio = DL.empty('No hay insumos que coincidan', 'Cambia la búsqueda o los filtros.');
+      vacio.hidden = true;
+      host.append(h('div', { class: 'tabla-scroll' }, h('table', { class: 'tabla tabla-insumos' },
+        h('thead', {}, h('tr', {}, ['Categoría', 'Producto', 'Cantidad', 'Unidad', 'Precio (S/)', 'Precio por unidad', 'Nombre por unidad', 'Verificado', ''].map((t, i) => h('th', { scope: 'col', class: i >= 2 && i <= 5 ? 'num' : '' }, t)))),
+        cuerpo)), vacio);
+      if (!list.length) host.append(DL.empty('Esta categoría aún no tiene insumos', 'Usa "Agregar insumo" para registrar el primero.'));
+      filtrar();
+      host.append(h('p', { class: 'nota' }, 'El precio por unidad es el precio de compra dividido entre la cantidad comprada. Usa las mismas unidades (g, ml o UND) en las recetas que en la compra.'));
+    },
+  };
+})();
+
+</script>
+  <script>
+/* Módulo 2: Costo de producción (recetas, empaques, pizzas por tamaño y sabor, pasteles) */
+(function () {
+  'use strict';
+  const DL = window.DL, h = DL.h, E = window.DLEngine, F = DL.fmt;
+  DL.views = DL.views || {};
+  const TIPO = { receta: 'Receta', empaque: 'Empaque y acompañamiento' };
+
+  /* Tarjeta editable de un bloque (receta, empaque o acompañamiento) */
+  function blockCard(b, fam, listId) {
+    const rows = h('tbody');
+    b.lineas.forEach((ln, i) => {
+      if (ln.s) {
+        rows.append(h('tr', { class: 'seccion' }, h('td', { colspan: 3 }, ln.s), h('td', { class: 'acciones' }, DL.iconBtn(DL.icons.borrar, 'Quitar título', () => { b.lineas.splice(i, 1); DL.Store.changed(); DL.rerender(); }, 'borrar'))));
+        return;
+      }
+      const costo = h('span'); const falta = () => E.lineMissing(fam, ln);
+      DL.bind(costo, () => (falta() ? 'Sin precio' : F.money(E.lineCost(fam, ln))));
+      DL.bindCls(costo, () => (falta() ? 'falta' : ''));
+      const unidad = h('span', { class: 'sufijo' });
+      DL.bind(unidad, () => (ln.ref ? 'und' : E.insumoUnidad(fam, ln.i)));
+      const nombre = ln.ref
+        ? h('span', { class: 'nombre-fijo' }, ln.nombre || 'Lote')
+        : DL.textInput({ value: ln.i, label: 'Insumo', placeholder: 'Escribe o elige un insumo', list: listId, onChange: (v) => { ln.i = v; DL.Store.changed(); } });
+      rows.append(h('tr', {},
+        h('td', { class: 'col-nombre' }, nombre),
+        h('td', { class: 'num' }, h('div', { class: 'con-sufijo' }, DL.numInput({ value: ln.q, label: 'Cantidad', onInput: (v) => { ln.q = v; DL.Store.changed(); } }), unidad)),
+        h('td', { class: 'num' }, costo),
+        h('td', { class: 'acciones' }, DL.iconBtn(DL.icons.borrar, 'Quitar línea', () => { b.lineas.splice(i, 1); DL.Store.changed(); DL.rerender(); }, 'borrar'))));
+    });
+    const total = h('span'); DL.bind(total, () => F.money(E.blockTotal(b.id)));
+    const foot = [h('tr', { class: 'total' }, h('td', { colspan: 2 }, 'Total'), h('td', { class: 'num' }, total), h('td'))];
+    if (b.rinde) {
+      const pu = h('span'); DL.bind(pu, () => F.money4(E.perUnit(b.id)));
+      foot.push(h('tr', { class: 'subtotal' }, h('td', { colspan: 2 }, 'Costo por ' + (b.unidad ? b.unidad.replace(/s$/, '') : 'unidad')), h('td', { class: 'num' }, pu), h('td')));
+    }
+    return h('section', { class: 'bloque bloque-' + b.tipo },
+      h('header', { class: 'bloque-cab' },
+        h('div', {}, h('h3', {}, b.titulo), h('span', { class: 'etiqueta' }, TIPO[b.tipo] || b.tipo)),
+        b.rinde ? h('label', { class: 'rinde' }, 'Rinde', DL.numInput({ value: b.rinde, label: 'Rendimiento', onInput: (v) => { b.rinde = v; DL.Store.changed(); } }), h('span', { class: 'sufijo' }, b.unidad || '')) : null),
+      h('div', { class: 'tabla-scroll' }, h('table', { class: 'tabla tabla-compacta' },
+        h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Insumo'), h('th', { scope: 'col', class: 'num' }, 'Cantidad'), h('th', { scope: 'col', class: 'num' }, 'Costo'), h('th'))),
+        rows, h('tfoot', {}, foot))),
+      h('footer', { class: 'bloque-pie' }, h('button', { type: 'button', class: 'btn btn-suave', onclick: () => {
+        b.lineas.push({ i: '', q: 0 }); DL.Store.changed();
+        DL.rerender(() => { const c = document.querySelector('[data-bloque="' + b.id + '"] tbody tr:last-child .col-nombre input'); if (c) c.focus(); });
+      } }, h('span', { html: DL.icons.mas_chico }), 'Agregar insumo')));
+  }
+  const wrapBlock = (b, fam, listId) => { const c = blockCard(b, fam, listId); c.dataset.bloque = b.id; return c; };
+
+  function datalist(fam) {
+    const names = []; const seen = new Set();
+    (DL.Store.state.insumos[fam] || []).forEach((it) => [it.p, it.pu].forEach((n) => { if (n && !seen.has(E.norm(n))) { seen.add(E.norm(n)); names.push(n); } }));
+    return h('datalist', { id: 'lista-' + fam }, names.map((n) => h('option', { value: n })));
+  }
+
+  /* Tabla resumen: costo de cada producto de la familia */
+  function resumen(fam) {
+    const prods = E.products().filter((p) => p.fam === fam);
+    if (!prods.length) return null;
+    const conSec = prods.some((p) => p.seccion);
+    const P = (id) => E.productById(id);
+    const body = h('tbody');
+    prods.forEach((p0) => {
+      const celda = (fn, cls) => { const td = h('td', { class: 'num ' + (cls || '') }); DL.bind(td, fn); return td; };
+      const marg = h('td', { class: 'num' }, DL.badgeMargen(() => P(p0.id).margenLlevar, () => P(p0.id).precio));
+      body.append(h('tr', {},
+        h('td', {}, p0.nombre), conSec ? h('td', { class: 'tenue' }, p0.seccion) : null,
+        celda(() => F.money(P(p0.id).costo)), celda(() => F.money(P(p0.id).empaque)),
+        celda(() => F.money(P(p0.id).costoLlevar), 'fuerte'), celda(() => (P(p0.id).precio ? F.money(P(p0.id).precio) : 'Sin precio'), 'tenue'),
+        celda(() => (P(p0.id).precio ? F.money(P(p0.id).utilLlevar) : '—')), marg));
+    });
+    return h('section', { class: 'tarjeta' },
+      h('header', { class: 'tarjeta-cab' }, h('h2', {}, 'Costo por producto'), h('p', {}, 'Producción es el costo de insumos; para llevar suma el empaque. No incluye costos indirectos.')),
+      h('div', { class: 'tabla-scroll' }, h('table', { class: 'tabla' },
+        h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Producto'), conSec ? h('th', { scope: 'col' }, 'Presentación') : null,
+          ['Producción', 'Empaque', 'Costo para llevar', 'Precio de carta', 'Utilidad (llevar)', 'Margen'].map((t) => h('th', { scope: 'col', class: 'num' }, t)))), body)));
+  }
+
+  /* ---------- Pizzas ---------- */
+  const pz = { tam: 'mediana', tipo: 'unico' };
+  function matrixTable(m, opts) {
+    // m: {cols, filas}. opts.rowInfo(fila) -> {costo, masa, empaque, pk, id}. Devuelve tarjeta con tabla editable.
+    const head = h('tr', {}, h('th', { scope: 'col', class: 'pegado' }, 'Sabor'),
+      opts.derivadas.map((d) => h('th', { scope: 'col', class: 'num derivada' }, d.t)),
+      m.cols.map((c) => h('th', { scope: 'col', class: 'num ing', title: c }, c)), h('th'));
+    const body = h('tbody');
+    m.filas.forEach((f, r) => {
+      const tds = opts.derivadas.map((d) => {
+        const td = h('td', { class: 'num derivada ' + (d.cls || '') });
+        if (d.badge) td.append(DL.badgeMargen(() => d.badge(f).m, () => d.badge(f).p)); else DL.bind(td, () => d.fn(f));
+        return td;
+      });
+      const gs = m.cols.map((c, j) => h('td', { class: 'num ing' }, DL.numInput({ value: f.g[j], label: f.s + ': ' + c, onInput: (v) => { f.g[j] = v; DL.Store.changed(); } })));
+      body.append(h('tr', {}, h('th', { scope: 'row', class: 'pegado' }, f.s), tds, gs,
+        h('td', { class: 'acciones' }, DL.iconBtn(DL.icons.borrar, 'Quitar sabor', async () => {
+          if (await DL.confirm({ titulo: 'Quitar "' + f.s + '"', mensaje: 'Se elimina la receta de este sabor.', ok: 'Quitar', peligro: true })) { m.filas.splice(r, 1); DL.Store.changed(); DL.rerender(); }
+        }, 'borrar'))));
+    });
+    const nuevo = h('input', { type: 'text', class: 'celda', placeholder: 'Nuevo sabor', 'aria-label': 'Nombre del nuevo sabor' });
+    const add = () => {
+      const n = nuevo.value.trim(); if (!n) return nuevo.focus();
+      if (m.filas.some((f) => E.norm(f.s) === E.norm(n))) return DL.toast('Ese sabor ya existe.', 'error');
+      m.filas.push({ s: n, g: m.cols.map(() => 0) }); DL.Store.changed(); DL.rerender();
+    };
+    nuevo.addEventListener('keydown', (e) => { if (e.key === 'Enter') add(); });
+    return [h('div', { class: 'tabla-scroll matriz' }, h('table', { class: 'tabla tabla-matriz' }, h('thead', {}, head), body)),
+      h('div', { class: 'barra barra-pie' }, nuevo, h('button', { type: 'button', class: 'btn btn-suave', onclick: add }, h('span', { html: DL.icons.mas_chico }), 'Agregar sabor'))];
+  }
+
+  function renderPizzas(host) {
+    const st = DL.Store.state, P = st.pizzas;
+    const tam = P.tamanos.find((t) => t.id === pz.tam) || P.tamanos[0];
+    const P_ = (id) => E.productById(id);
+    host.append(resumenNota());
+    host.append(h('div', { class: 'barra' },
+      DL.segmented({ label: 'Tamaño', value: pz.tam, options: P.tamanos.map((t) => ({ v: t.id, t: t.nombre })), onPick: (v) => { pz.tam = v; DL.rerender(); } }),
+      DL.segmented({ label: 'Tipo', value: pz.tipo, options: [{ v: 'unico', t: 'Sabor único' }, { v: 'dos', t: 'Dos sabores' }], onPick: (v) => { pz.tipo = v; DL.rerender(); } })));
+    const m = P.matrices[pz.tam + '|' + pz.tipo];
+    const idOf = (f) => 'pz-' + pz.tam + '-' + (pz.tipo === 'unico' ? 'u' : 'd') + '-' + E.slug(f.s);
+    const cont = h('section', { class: 'tarjeta' }, h('header', { class: 'tarjeta-cab' },
+      h('h2', {}, 'Ingredientes por sabor · pizza ' + tam.nombre.toLowerCase() + (pz.tipo === 'dos' ? ' de dos sabores' : '')),
+      h('p', {}, 'Gramos de cada ingrediente por pizza. El costo se calcula con los precios de Abarrotes y materiales.')));
+    if (!m) cont.append(DL.empty('No hay recetas para esta combinación'));
+    else cont.append(...matrixTable(m, { derivadas: [
+      { t: 'Ingredientes', fn: (f) => F.money(E.matrixRowCost(m.cols, f.g)) },
+      { t: 'Masa', fn: () => F.money(E.masaCosto(pz.tam)) },
+      { t: 'Empaque', fn: () => F.money(E.blockTotal('pizza-emp-' + pz.tam)) },
+      { t: 'Costo para llevar', cls: 'fuerte', fn: (f) => F.money(P_(idOf(f)) ? P_(idOf(f)).costoLlevar : 0) },
+      { t: 'Precio', cls: 'tenue', fn: (f) => (P_(idOf(f)) && P_(idOf(f)).precio ? F.money(P_(idOf(f)).precio) : 'Sin precio') },
+      { t: 'Margen', badge: (f) => ({ m: P_(idOf(f)) ? P_(idOf(f)).margenLlevar : null, p: P_(idOf(f)) ? P_(idOf(f)).precio : 0 }) },
+    ] }));
+    host.append(cont);
+
+    // Masa madre + gramos por tamaño
+    const masaG = h('tbody');
+    P.tamanos.forEach((t) => {
+      const c = h('span'); DL.bind(c, () => F.money(E.masaCosto(t.id)));
+      masaG.append(h('tr', {}, h('td', {}, t.nombre), h('td', { class: 'num' }, h('div', { class: 'con-sufijo' }, DL.numInput({ value: P.masaG[t.id], label: 'Masa ' + t.nombre, onInput: (v) => { P.masaG[t.id] = v; DL.Store.changed(); } }), h('span', { class: 'sufijo' }, 'g'))), h('td', { class: 'num' }, c)));
+    });
+    const gramo = h('span'); DL.bind(gramo, () => F.money4(E.masaGramo()) + ' por gramo');
+    const bloqMasa = wrapBlock(E.block('pizza-masa'), 'pizzas', 'lista-pizzas');
+    const tamMasa = h('section', { class: 'bloque' }, h('header', { class: 'bloque-cab' }, h('div', {}, h('h3', {}, 'Masa por tamaño'), h('span', { class: 'etiqueta' }, 'Gramos de masa por pizza'))),
+      h('div', { class: 'tabla-scroll' }, h('table', { class: 'tabla tabla-compacta' }, h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Tamaño'), h('th', { scope: 'col', class: 'num' }, 'Masa'), h('th', { scope: 'col', class: 'num' }, 'Costo'))), masaG)),
+      h('footer', { class: 'bloque-pie tenue' }, gramo));
+    host.append(h('div', { class: 'rejilla' }, bloqMasa, tamMasa, wrapBlock(E.block('pizza-emp-' + pz.tam), 'pizzas', 'lista-pizzas')));
+
+    // Tajadas
+    const T = P.tajada;
+    const idT = (f) => 'pt-' + E.slug(f.s);
+    const secT = h('section', { class: 'tarjeta' }, h('header', { class: 'tarjeta-cab' }, h('h2', {}, 'Pizza por tajada'),
+      h('p', {}, 'Gramos por tajada. La masa de cada tajada se calcula con la masa de la pizza familiar dividida entre las tajadas por pizza.')),
+      h('div', { class: 'barra' }, h('label', { class: 'rinde' }, 'Tajadas por pizza', DL.numInput({ value: T.tajadasPorPizza, label: 'Tajadas por pizza', onInput: (v) => { T.tajadasPorPizza = v; DL.Store.changed(); } }))));
+    secT.append(...matrixTable(T, { derivadas: [
+      { t: 'Ingredientes + masa + acomp.', fn: (f) => F.money(P_(idT(f)) ? P_(idT(f)).costo : 0) },
+      { t: 'Empaque', fn: () => F.money(E.blockTotal('pizza-emp-tajada')) },
+      { t: 'Precio', cls: 'tenue', fn: (f) => (P_(idT(f)) && P_(idT(f)).precio ? F.money(P_(idT(f)).precio) : 'Sin precio') },
+      { t: 'Margen', badge: (f) => ({ m: P_(idT(f)) ? P_(idT(f)).margenLlevar : null, p: P_(idT(f)) ? P_(idT(f)).precio : 0 }) },
+    ] }));
+    host.append(secT);
+    host.append(h('div', { class: 'rejilla' }, wrapBlock(E.block('pizza-emp-tajada'), 'pizzas', 'lista-pizzas'), wrapBlock(E.block('pizza-acomp-tajada'), 'pizzas', 'lista-pizzas'), wrapBlock(E.block('pizza-salsa'), 'pizzas', 'lista-pizzas')));
+  }
+  const resumenNota = () => h('p', { class: 'nota nota-alta' }, 'Los costos de las pizzas suman ingredientes, masa y, para llevar, caja y acompañamientos. La salsa de tomate queda como referencia porque en el Excel aún está en cero.');
+
+  DL.views.produccion = {
+    titulo: 'Costo de producción',
+    sub: 'Recetas, empaques y acompañamientos por producto. Cambia una cantidad y verás el costo y el margen al instante.',
+    render(host) {
+      const st = DL.Store.state;
+      let fam = st.ui.prodFam && st.ui.prodFam !== 'bebidas' && st.insumos[st.ui.prodFam] ? st.ui.prodFam : 'pizzas';
+      st.ui.prodFam = fam;
+      host.append(DL.famPills({ active: fam, exclude: ['bebidas'], onPick: (id) => { st.ui.prodFam = id; DL.rerender(); } }));
+      host.append(datalist(fam));
+      if (fam === 'pizzas') {
+        renderPizzas(host);
+        return;
+      }
+      const res = resumen(fam); if (res) host.append(res);
+      if (fam === 'pasteles') {
+        const filas = h('tbody');
+        Object.keys(window.DILETTO_DATA.pasteles).forEach((id) => {
+          const d = window.DILETTO_DATA.pasteles[id]; const s = st.pasteles[id];
+          filas.append(h('tr', {}, h('td', {}, d.nombre), h('td', { class: 'num' }, DL.numInput({ value: s.tajadas, label: 'Tajadas de ' + d.nombre, onInput: (v) => { s.tajadas = v; DL.Store.changed(); } }))));
+        });
+        host.append(h('section', { class: 'tarjeta' }, h('header', { class: 'tarjeta-cab' }, h('h2', {}, 'Tajadas por pastel'), h('p', {}, 'Se usa para calcular el costo de cada tajada.')),
+          h('div', { class: 'tabla-scroll' }, h('table', { class: 'tabla tabla-compacta' }, h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Pastel'), h('th', { scope: 'col', class: 'num' }, 'Tajadas'))), filas))));
+      }
+      host.append(h('div', { class: 'rejilla' }, (st.bloques[fam] || []).map((b) => wrapBlock(b, fam, 'lista-' + fam))));
+    },
+  };
+})();
+
+</script>
+  <script>
+/* Módulo 3: Ventas del día. Se eligen productos, se ingresan cantidades y se calculan
+   subtotales, costos, utilidad y margen. Costos indirectos excluidos. */
+(function () {
+  'use strict';
+  const DL = window.DL, h = DL.h, E = window.DLEngine, F = DL.fmt;
+  DL.views = DL.views || {};
+  const local = { fam: '*', q: '', todos: false };
+  const MOD = { consumo: 'Consumo', llevar: 'Llevar' };
+
+  function totales(lineas) {
+    const t = { venta: 0, costo: 0, util: 0, unidades: 0, mod: { consumo: { u: 0, v: 0, c: 0 }, llevar: { u: 0, v: 0, c: 0 } }, fam: {} };
+    lineas.forEach((ln) => {
+      const r = E.saleLine(ln); if (!r) return;
+      t.venta += r.venta; t.costo += r.costo; t.util += r.util; t.unidades += r.q;
+      const m = t.mod[ln.mod] || t.mod.consumo; m.u += r.q; m.v += r.venta; m.c += r.costo;
+      const f = (t.fam[r.p.famNombre] = t.fam[r.p.famNombre] || { u: 0, v: 0, c: 0 }); f.u += r.q; f.v += r.venta; f.c += r.costo;
+    });
+    t.margen = t.venta > 0 ? t.util / t.venta : null;
+    return t;
+  }
+
+  function addLine(pid) {
+    const v = DL.Store.state.venta;
+    const ex = v.lineas.find((l) => l.pid === pid && l.mod === 'consumo' && l.precio == null);
+    if (ex) ex.q = E.num(ex.q) + 1; else v.lineas.push({ id: DL.uid(), pid, mod: 'consumo', q: 1 });
+    DL.Store.changed(); DL.rerender();
+  }
+
+  function catalogo() {
+    const st = DL.Store.state;
+    const box = h('section', { class: 'tarjeta catalogo no-imprimir' });
+    const lista = h('div', { class: 'catalogo-lista' });
+    const pintar = () => {
+      DL.clear(lista);
+      const q = E.norm(local.q);
+      const prods = E.products().filter((p) => (local.fam === '*' || p.fam === local.fam) && (local.todos || p.precio > 0) && (!q || E.norm(p.nombre + ' ' + p.seccion + ' ' + p.famNombre).includes(q)));
+      if (!prods.length) return lista.append(DL.empty('No hay productos para mostrar', local.todos ? 'Prueba con otra búsqueda.' : 'Los productos sin precio están ocultos. Actívalos abajo o asigna su precio en Precios de carta.'));
+      let fam = '', sec = null, grid = null;
+      prods.forEach((p) => {
+        if (p.famNombre !== fam || p.seccion !== sec) {
+          if (p.famNombre !== fam) lista.append(h('h4', { class: 'catalogo-fam' }, p.famNombre));
+          if (p.seccion) lista.append(h('h5', { class: 'catalogo-sec' }, p.seccion));
+          fam = p.famNombre; sec = p.seccion; grid = h('div', { class: 'catalogo-grid' }); lista.append(grid);
+        }
+        grid.append(h('button', { type: 'button', class: 'producto', onclick: () => addLine(p.id), title: 'Agregar ' + p.nombre },
+          h('span', { class: 'producto-nombre' }, p.nombre), h('span', { class: 'producto-precio' }, p.precio ? F.money(p.precio) : 'Sin precio')));
+      });
+    };
+    box.append(h('header', { class: 'tarjeta-cab' }, h('h2', {}, 'Catálogo'), h('p', {}, 'Toca un producto para agregarlo a la venta.')),
+      DL.famPills({ active: local.fam, todos: true, onPick: (id) => { local.fam = id; DL.rerender(); } }),
+      h('div', { class: 'barra' },
+        h('input', { type: 'search', class: 'buscar', placeholder: 'Buscar producto', 'aria-label': 'Buscar producto', value: local.q, oninput: (e) => { local.q = e.target.value; pintar(); } }),
+        h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: local.todos, onchange: (e) => { local.todos = e.target.checked; pintar(); } }), 'Mostrar sin precio')),
+      lista);
+    pintar();
+    return box;
+  }
+
+  function tablaLineas() {
+    const v = DL.Store.state.venta;
+    const body = h('tbody');
+    v.lineas.forEach((ln, i) => {
+      const p = E.productById(ln.pid);
+      const R = () => E.saleLine(ln) || { venta: 0, costo: 0, util: 0, margen: null, precio: 0 };
+      const c = (fn, cls) => { const td = h('td', { class: 'num ' + (cls || '') }); DL.bind(td, fn); return td; };
+      const qty = DL.numInput({ value: ln.q, label: 'Cantidad', cls: 'cant', onInput: (x) => { ln.q = x; DL.Store.changed(); } });
+      const step = (d) => () => { ln.q = Math.max(0, E.num(ln.q) + d); qty.value = F.input(ln.q); DL.Store.changed(); };
+      const mods = ['consumo', 'llevar'].map((m) => { const b = h('button', { type: 'button', class: 'segmento', onclick: () => { ln.mod = m; DL.Store.changed(); } }, MOD[m]); DL.bindCls(b, () => (ln.mod === m ? 'activo' : '')); return b; });
+      body.append(h('tr', {},
+        h('td', {}, p ? h('div', {}, p.nombre) : h('div', { class: 'falta' }, 'Producto ya no existe'), p && p.seccion ? h('div', { class: 'tenue chico' }, p.seccion) : null),
+        h('td', {}, h('div', { class: 'segmentos segmentos-chico', role: 'group', 'aria-label': 'Modalidad' }, mods)),
+        h('td', { class: 'num' }, h('div', { class: 'stepper' }, DL.iconBtn(DL.icons.menos_chico, 'Restar uno', step(-1)), qty, DL.iconBtn(DL.icons.mas_chico, 'Sumar uno', step(1)))),
+        h('td', { class: 'num' }, DL.numInput({ value: ln.precio == null ? (p ? p.precio : 0) : ln.precio, label: 'Precio unitario', placeholder: '0.00', onInput: (x) => { ln.precio = x; DL.Store.changed(); } })),
+        c(() => F.money(R().costo), 'tenue'), c(() => F.money(R().venta)), c(() => F.money(R().util), 'fuerte'),
+        h('td', { class: 'num' }, DL.badgeMargen(() => R().margen, () => R().venta)),
+        h('td', { class: 'acciones no-imprimir' }, DL.iconBtn(DL.icons.borrar, 'Quitar de la venta', () => { v.lineas.splice(i, 1); DL.Store.changed(); DL.rerender(); }, 'borrar'))));
+    });
+    const T = () => totales(v.lineas);
+    const pie = h('tfoot', {}, h('tr', { class: 'total' }, h('td', { colspan: 2 }, 'Total de la venta'),
+      (() => { const td = h('td', { class: 'num' }); DL.bind(td, () => F.dec(T().unidades) + ' u.'); return td; })(), h('td'),
+      (() => { const td = h('td', { class: 'num' }); DL.bind(td, () => F.money(T().costo)); return td; })(),
+      (() => { const td = h('td', { class: 'num' }); DL.bind(td, () => F.money(T().venta)); return td; })(),
+      (() => { const td = h('td', { class: 'num' }); DL.bind(td, () => F.money(T().util)); return td; })(),
+      h('td', { class: 'num' }, DL.badgeMargen(() => T().margen, () => T().venta)), h('td', { class: 'no-imprimir' })));
+    return h('div', { class: 'tabla-scroll' }, h('table', { class: 'tabla tabla-venta' },
+      h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Producto'), h('th', { scope: 'col' }, 'Modalidad'), h('th', { scope: 'col', class: 'num' }, 'Cantidad'), h('th', { scope: 'col', class: 'num' }, 'Precio'),
+        h('th', { scope: 'col', class: 'num' }, 'Costo'), h('th', { scope: 'col', class: 'num' }, 'Venta'), h('th', { scope: 'col', class: 'num' }, 'Utilidad'), h('th', { scope: 'col', class: 'num' }, 'Margen'), h('th', { class: 'no-imprimir' }))),
+      body, pie));
+  }
+
+  function resumenes(lineas) {
+    const cont = h('div', { class: 'rejilla rejilla-2' });
+    DL.bindFn(() => {
+      const t = totales(lineas); DL.clear(cont);
+      const fila = (n, o) => h('tr', {}, h('td', {}, n), h('td', { class: 'num' }, F.dec(o.u)), h('td', { class: 'num' }, F.money(o.v)), h('td', { class: 'num' }, F.money(o.v - o.c)));
+      const tabla = (titulo, filas) => h('section', { class: 'tarjeta' }, h('header', { class: 'tarjeta-cab' }, h('h2', {}, titulo)),
+        filas.length ? h('table', { class: 'tabla tabla-compacta' }, h('thead', {}, h('tr', {}, h('th', {}, ''), h('th', { class: 'num' }, 'Unid.'), h('th', { class: 'num' }, 'Venta'), h('th', { class: 'num' }, 'Utilidad'))), h('tbody', {}, filas)) : h('p', { class: 'tenue' }, 'Sin datos todavía.'));
+      cont.append(tabla('Por modalidad', lineas.length ? ['consumo', 'llevar'].map((m) => fila(MOD[m], t.mod[m])) : []),
+        tabla('Por categoría', Object.keys(t.fam).sort().map((k) => fila(k, t.fam[k]))));
+    });
+    return cont;
+  }
+
+  function guardarCierre() {
+    const st = DL.Store.state, v = st.venta;
+    if (!v.lineas.length) return DL.toast('Agrega productos antes de guardar el cierre.', 'error');
+    const guardar = () => {
+      const lineas = v.lineas.map((ln) => { const r = E.saleLine(ln); return r && { nombre: r.p.nombre, seccion: r.p.seccion, mod: ln.mod, q: r.q, precio: r.precio, venta: r.venta, costo: r.costo, util: r.util }; }).filter(Boolean);
+      const t = totales(v.lineas);
+      st.cierres = st.cierres.filter((c) => c.fecha !== v.fecha);
+      st.cierres.push({ id: DL.uid(), fecha: v.fecha, creado: new Date().toISOString(), lineas, totales: { venta: t.venta, costo: t.costo, util: t.util, unidades: t.unidades } });
+      st.cierres.sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+      DL.Store.changed(); DL.rerender(); DL.toast('Cierre guardado.');
+    };
+    if (st.cierres.some((c) => c.fecha === v.fecha)) DL.confirm({ titulo: 'Ya existe un cierre para esta fecha', mensaje: 'Si continúas, se reemplaza por la venta actual.', ok: 'Reemplazar' }).then((ok) => ok && guardar());
+    else guardar();
+  }
+
+  function cierres() {
+    const st = DL.Store.state;
+    const sec = h('section', { class: 'tarjeta no-imprimir' }, h('header', { class: 'tarjeta-cab' }, h('h2', {}, 'Cierres guardados'), h('p', {}, 'Resumen de cada día cerrado. Los montos quedan fijos aunque luego cambien los precios.')));
+    if (!st.cierres.length) { sec.append(DL.empty('Todavía no hay cierres', 'Cuando termines el día, usa "Guardar cierre".')); return sec; }
+    st.cierres.forEach((c) => {
+      const p = DL.isoParts(c.fecha);
+      sec.append(h('details', { class: 'cierre' },
+        h('summary', {}, h('span', { class: 'cierre-fecha' }, DL.DIA_SEMANA[p.dow] + ' ' + F.date(c.fecha)), h('span', { class: 'tenue' }, F.dec(c.totales.unidades) + ' u.'), h('span', {}, F.money(c.totales.venta)), h('span', { class: 'fuerte' }, F.money(c.totales.util))),
+        h('div', { class: 'tabla-scroll' }, h('table', { class: 'tabla tabla-compacta' },
+          h('thead', {}, h('tr', {}, ['Producto', 'Modalidad', 'Cant.', 'Precio', 'Venta', 'Utilidad'].map((t, i) => h('th', { class: i > 1 ? 'num' : '' }, t)))),
+          h('tbody', {}, c.lineas.map((l) => h('tr', {}, h('td', {}, l.nombre), h('td', {}, MOD[l.mod]), h('td', { class: 'num' }, F.dec(l.q)), h('td', { class: 'num' }, F.money(l.precio)), h('td', { class: 'num' }, F.money(l.venta)), h('td', { class: 'num' }, F.money(l.util))))))),
+        h('div', { class: 'barra barra-pie' }, h('span', { class: 'espacio' }),
+          h('button', { type: 'button', class: 'btn', onclick: () => { st.venta.fecha = c.fecha; st.venta.lineas = c.lineas.map((l) => { const pr = E.products().find((x) => x.nombre === l.nombre && x.seccion === l.seccion); return pr ? { id: DL.uid(), pid: pr.id, mod: l.mod, q: l.q, precio: l.precio } : null; }).filter(Boolean); DL.Store.changed(); DL.rerender(); window.scrollTo({ top: 0 }); } }, 'Cargar en la venta'),
+          h('button', { type: 'button', class: 'btn btn-peligro-suave', onclick: async () => { if (await DL.confirm({ titulo: 'Eliminar cierre', mensaje: 'Se borra el cierre del ' + F.date(c.fecha) + '.', ok: 'Eliminar', peligro: true })) { st.cierres = st.cierres.filter((x) => x.id !== c.id); DL.Store.changed(); DL.rerender(); } } }, 'Eliminar'))));
+    });
+    return sec;
+  }
+
+  DL.views.ventas = {
+    titulo: 'Ventas',
+    sub: 'Registra lo vendido en el día. Consumo cobra solo el costo de producción; llevar suma además el empaque.',
+    acciones(box) {
+      const st = DL.Store.state;
+      box.append(h('button', { type: 'button', class: 'btn', onclick: () => window.print() }, h('span', { html: DL.icons.imprimir }), 'Imprimir'),
+        h('button', { type: 'button', class: 'btn btn-primario', onclick: guardarCierre }, 'Guardar cierre'));
+    },
+    render(host) {
+      const st = DL.Store.state, v = st.venta;
+      const T = () => totales(v.lineas);
+      const dia = h('span', { class: 'tenue' });
+      DL.bind(dia, () => { if (!v.fecha) return ''; const p = DL.isoParts(v.fecha); return DL.DIA_SEMANA[p.dow]; });
+      host.append(h('div', { class: 'barra' },
+        h('label', { class: 'rinde' }, 'Fecha', h('input', { type: 'date', class: 'celda', value: v.fecha, 'aria-label': 'Fecha de la venta', onchange: (e) => { v.fecha = e.target.value || DL.isoToday(); DL.Store.changed(); } }), dia),
+        h('span', { class: 'espacio' }),
+        h('button', { type: 'button', class: 'btn btn-suave no-imprimir', onclick: async () => { if (v.lineas.length && await DL.confirm({ titulo: 'Vaciar la venta actual', mensaje: 'Se quitan todos los productos de la tabla.', ok: 'Vaciar', peligro: true })) { v.lineas = []; DL.Store.changed(); DL.rerender(); } } }, 'Vaciar venta')));
+      const item = (label, fn, cls) => { const s = h('span', { class: 'banda-valor' }); DL.bind(s, fn); return h('div', { class: 'banda-item ' + (cls || '') }, h('span', { class: 'banda-etiqueta' }, label), s); };
+      host.append(h('div', { class: 'banda banda-grande' },
+        item('Venta total', () => F.money(T().venta)), item('Costo total', () => F.money(T().costo)),
+        item('Utilidad', () => F.money(T().util), 'destacado'), item('Margen', () => F.pct(T().margen)), item('Unidades', () => F.dec(T().unidades))));
+      host.append(h('div', { class: 'ventas-cuerpo' }, catalogo(),
+        h('section', { class: 'tarjeta venta-actual' }, h('header', { class: 'tarjeta-cab' }, h('h2', {}, 'Venta del día')),
+          v.lineas.length ? tablaLineas() : DL.empty('Aún no hay productos en esta venta', 'Elige productos del catálogo para empezar.'))));
+      if (v.lineas.length) host.append(resumenes(v.lineas));
+      host.append(cierres());
+    },
+  };
+})();
+
+</script>
+  <script>
+/* Módulo 4: Historial de ventas. Carga de reportes PDF clasificados por mes y por día de atención
+   (jueves, viernes, sábado, domingo). Los archivos se guardan en este navegador (IndexedDB). */
+(function () {
+  'use strict';
+  const DL = window.DL, h = DL.h, E = window.DLEngine, F = DL.fmt;
+  DL.views = DL.views || {};
+  const MAX_MB = 30;
+  const local = { sel: null, abiertos: new Set(), q: '' }; // sel: {key, dia}
+
+  const key = (m) => m.anio * 100 + m.mes;
+  const keyLabel = (k) => DL.MESES[(k % 100) - 1] + ' ' + Math.floor(k / 100);
+  const esPdf = (f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+
+  /* Formulario de clasificación reutilizable (subida y edición) */
+  function formClasificacion(rec) {
+    const box = h('div', { class: 'clasif' });
+    const now = new Date();
+    const build = () => {
+      DL.clear(box);
+      const anioIn = h('input', { type: 'number', class: 'celda num', min: 2020, max: 2100, value: rec.anio, 'aria-label': 'Año', onchange: (e) => { rec.anio = Math.round(E.num(e.target.value)) || now.getFullYear(); } });
+      box.append(
+        h('div', { class: 'campo' }, h('span', { class: 'campo-etq' }, 'Tipo de reporte'),
+          DL.segmented({ label: 'Tipo de reporte', value: rec.tipo, options: [{ v: 'Diario', t: 'Diario' }, { v: 'Semanal', t: 'Semanal' }], onPick: (v) => { rec.tipo = v; if (v === 'Diario' && rec.dias.length > 1) rec.dias = rec.dias.slice(0, 1); build(); } })),
+        h('div', { class: 'campo' }, h('label', { class: 'campo-etq' }, 'Fecha del reporte (opcional)'),
+          h('input', { type: 'date', class: 'celda', value: rec.fecha || '', onchange: (e) => {
+            rec.fecha = e.target.value;
+            if (rec.fecha) {
+              const p = DL.isoParts(rec.fecha); rec.mes = p.m; rec.anio = p.y;
+              const nombre = DL.DIA_SEMANA[p.dow];
+              if (DL.DIAS.includes(nombre)) { if (rec.tipo === 'Diario') rec.dias = [nombre]; else if (!rec.dias.includes(nombre)) rec.dias.push(nombre); }
+              else DL.toast(nombre + ' no es día de atención. Elige el día manualmente.', 'error');
+            }
+            build();
+          } }),
+          h('span', { class: 'campo-ayuda' }, 'Si eliges una fecha, el mes y el día se completan solos.')),
+        h('div', { class: 'campo campo-fila' },
+          h('div', {}, h('label', { class: 'campo-etq' }, 'Mes'), DL.select({ value: String(rec.mes), label: 'Mes', options: DL.MESES.map((m, i) => ({ v: String(i + 1), t: m })), onChange: (v) => { rec.mes = +v; } })),
+          h('div', {}, h('label', { class: 'campo-etq' }, 'Año'), anioIn)),
+        h('div', { class: 'campo' }, h('span', { class: 'campo-etq' }, rec.tipo === 'Semanal' ? 'Días de atención que cubre' : 'Día de atención'),
+          h('div', { class: 'chips', role: 'group', 'aria-label': 'Días de atención' }, DL.DIAS.map((d) => {
+            const on = rec.dias.includes(d);
+            return h('button', { type: 'button', class: 'chip' + (on ? ' activo' : ''), 'aria-pressed': on ? 'true' : 'false', onclick: () => {
+              if (rec.tipo === 'Diario') rec.dias = on ? [] : [d]; else rec.dias = on ? rec.dias.filter((x) => x !== d) : DL.DIAS.filter((x) => rec.dias.includes(x) || x === d);
+              build();
+            } }, d);
+          }))));
+    };
+    build();
+    return box;
+  }
+
+  /* Diálogo de subida */
+  function abrirSubida(files) {
+    const now = new Date();
+    const pend = [];
+    const rechazados = [];
+    Array.from(files || []).forEach((f) => {
+      if (!esPdf(f)) rechazados.push(f.name + ' (no es PDF)');
+      else if (f.size > MAX_MB * 1048576) rechazados.push(f.name + ' (supera ' + MAX_MB + ' MB)');
+      else pend.push({ file: f, tipo: 'Diario', mes: now.getMonth() + 1, anio: now.getFullYear(), dias: [], fecha: '' });
+    });
+    if (rechazados.length) DL.toast('No se agregó: ' + rechazados.join(', '), 'error');
+    if (!pend.length && files && files.length) return;
+
+    const dlg = h('dialog', { class: 'dialogo dialogo-ancho' });
+    if (typeof dlg.showModal !== 'function') return DL.toast('Este navegador no admite el diálogo de carga. Actualízalo.', 'error');
+    const lista = h('div', { class: 'pend-lista' });
+    const btnGuardar = h('button', { type: 'button', class: 'btn btn-primario' }, 'Guardar reportes');
+    const input = h('input', { type: 'file', accept: 'application/pdf,.pdf', multiple: true, class: 'oculto', onchange: (e) => { agregar(e.target.files); e.target.value = ''; } });
+
+    function agregar(fs) {
+      Array.from(fs).forEach((f) => {
+        if (!esPdf(f)) return DL.toast(f.name + ' no es un PDF.', 'error');
+        if (f.size > MAX_MB * 1048576) return DL.toast(f.name + ' supera ' + MAX_MB + ' MB.', 'error');
+        pend.push({ file: f, tipo: 'Diario', mes: now.getMonth() + 1, anio: now.getFullYear(), dias: [], fecha: '' });
+      });
+      pintar();
+    }
+    function pintar() {
+      DL.clear(lista);
+      if (!pend.length) lista.append(DL.empty('Aún no elegiste archivos', 'Selecciona uno o varios PDF para clasificarlos.'));
+      pend.forEach((r, i) => lista.append(h('article', { class: 'pend' },
+        h('header', {}, h('span', { class: 'pend-ico', html: DL.icons.pdf }), h('div', { class: 'pend-nombre' }, h('strong', {}, r.file.name), h('span', { class: 'tenue chico' }, F.bytes(r.file.size))),
+          DL.iconBtn(DL.icons.x, 'Quitar archivo', () => { pend.splice(i, 1); pintar(); })),
+        formClasificacion(r))));
+      btnGuardar.disabled = !pend.length; btnGuardar.textContent = pend.length > 1 ? 'Guardar ' + pend.length + ' reportes' : 'Guardar reporte';
+    }
+    btnGuardar.addEventListener('click', async () => {
+      const sinDia = pend.find((r) => !r.dias.length);
+      if (sinDia) return DL.toast('Elige al menos un día de atención para "' + sinDia.file.name + '".', 'error');
+      btnGuardar.disabled = true; btnGuardar.textContent = 'Guardando…';
+      try {
+        let ult = null;
+        for (const r of pend) {
+          const id = DL.uid();
+          await DL.Store.pdf.put(id, r.file);
+          DL.Store.state.historial.push({ id, nombre: r.file.name, tam: r.file.size, tipo: r.tipo, mes: r.mes, anio: r.anio, dias: r.dias.slice(), fecha: r.fecha || '', subido: new Date().toISOString() });
+          ult = { key: r.anio * 100 + r.mes, dia: r.dias[0] };
+        }
+        local.sel = ult; local.abiertos.add(ult.key);
+        DL.Store.pdf.persistRequest(); DL.Store.changed();
+        dlg.close(); dlg.remove(); DL.rerender();
+        DL.toast(pend.length > 1 ? pend.length + ' reportes guardados.' : 'Reporte guardado.');
+        if (!DL.Store.pdf.persistent) DL.toast('Este navegador no permite guardar archivos de forma permanente. Los PDF se perderán al cerrar la pestaña.', 'error');
+      } catch (e) { console.error(e); DL.toast('No se pudo guardar el archivo. Revisa el espacio disponible del navegador.', 'error'); btnGuardar.disabled = false; }
+    });
+    dlg.append(h('header', { class: 'dialogo-cab' }, h('h2', {}, 'Subir reportes de ventas'), DL.iconBtn(DL.icons.x, 'Cerrar', () => { dlg.close(); dlg.remove(); })),
+      h('div', { class: 'dialogo-cuerpo' },
+        h('div', { class: 'zona' }, h('span', { html: DL.icons.subir }), h('p', {}, 'Arrastra PDF aquí o'), h('button', { type: 'button', class: 'btn', onclick: () => input.click() }, 'Elegir archivos'), input),
+        lista),
+      h('footer', { class: 'dialogo-pie' }, h('button', { type: 'button', class: 'btn', onclick: () => { dlg.close(); dlg.remove(); } }, 'Cancelar'), btnGuardar));
+    dlg.addEventListener('dragover', (e) => e.preventDefault());
+    dlg.addEventListener('drop', (e) => { e.preventDefault(); agregar(e.dataTransfer.files); });
+    dlg.addEventListener('cancel', () => dlg.remove());
+    document.body.append(dlg); pintar(); dlg.showModal();
+  }
+
+  function editar(m) {
+    const rec = { tipo: m.tipo, mes: m.mes, anio: m.anio, dias: m.dias.slice(), fecha: m.fecha || '' };
+    const dlg = h('dialog', { class: 'dialogo' });
+    const cerrar = () => { dlg.close(); dlg.remove(); };
+    dlg.append(h('header', { class: 'dialogo-cab' }, h('h2', {}, 'Cambiar clasificación'), DL.iconBtn(DL.icons.x, 'Cerrar', cerrar)),
+      h('div', { class: 'dialogo-cuerpo' }, h('p', { class: 'tenue' }, m.nombre), formClasificacion(rec)),
+      h('footer', { class: 'dialogo-pie' }, h('button', { type: 'button', class: 'btn', onclick: cerrar }, 'Cancelar'),
+        h('button', { type: 'button', class: 'btn btn-primario', onclick: () => {
+          if (!rec.dias.length) return DL.toast('Elige al menos un día de atención.', 'error');
+          Object.assign(m, { tipo: rec.tipo, mes: rec.mes, anio: rec.anio, dias: rec.dias, fecha: rec.fecha });
+          local.sel = { key: key(m), dia: m.dias[0] }; local.abiertos.add(key(m));
+          DL.Store.changed(); cerrar(); DL.rerender(); DL.toast('Clasificación actualizada.');
+        } }, 'Guardar cambios')));
+    dlg.addEventListener('cancel', () => dlg.remove());
+    document.body.append(dlg); dlg.showModal();
+  }
+
+  async function ver(m) {
+    const blob = await DL.Store.pdf.get(m.id);
+    if (!blob) return DL.toast('No se encontró el archivo en este navegador.', 'error');
+    const url = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+    const dlg = h('dialog', { class: 'dialogo dialogo-visor' });
+    const cerrar = () => { dlg.close(); dlg.remove(); URL.revokeObjectURL(url); };
+    dlg.append(h('header', { class: 'dialogo-cab' }, h('h2', {}, m.nombre),
+      h('div', { class: 'cab-acciones' }, h('a', { class: 'btn', href: url, target: '_blank', rel: 'noopener' }, 'Abrir en pestaña'), DL.iconBtn(DL.icons.x, 'Cerrar', cerrar))),
+      h('iframe', { class: 'visor', src: url, title: m.nombre }));
+    dlg.addEventListener('cancel', () => { dlg.remove(); URL.revokeObjectURL(url); });
+    document.body.append(dlg); dlg.showModal();
+  }
+  async function descargar(m) {
+    const blob = await DL.Store.pdf.get(m.id);
+    if (!blob) return DL.toast('No se encontró el archivo en este navegador.', 'error');
+    DL.Store.download(m.nombre, new Blob([blob], { type: 'application/pdf' }));
+  }
+  async function eliminar(m) {
+    if (!(await DL.confirm({ titulo: 'Eliminar reporte', mensaje: '"' + m.nombre + '" se borra de este navegador.', ok: 'Eliminar', peligro: true }))) return;
+    await DL.Store.pdf.del(m.id);
+    DL.Store.state.historial = DL.Store.state.historial.filter((x) => x.id !== m.id);
+    DL.Store.changed(); DL.rerender();
+  }
+
+  function tarjetaArchivo(m) {
+    return h('article', { class: 'archivo' },
+      h('span', { class: 'archivo-ico', html: DL.icons.pdf }),
+      h('div', { class: 'archivo-datos' }, h('strong', { class: 'archivo-nombre', title: m.nombre }, m.nombre),
+        h('div', { class: 'archivo-meta tenue chico' }, h('span', { class: 'etiqueta ' + (m.tipo === 'Semanal' ? 'etiqueta-semanal' : '') }, m.tipo), m.fecha ? F.date(m.fecha) : null, F.bytes(m.tam), 'Subido ' + F.date(m.subido.slice(0, 10)))),
+      h('div', { class: 'archivo-acc' },
+        h('button', { type: 'button', class: 'btn btn-suave', onclick: () => ver(m) }, h('span', { html: DL.icons.ojo }), 'Ver'),
+        DL.iconBtn(DL.icons.bajar, 'Descargar', () => descargar(m)), DL.iconBtn(DL.icons.editar, 'Cambiar clasificación', () => editar(m)), DL.iconBtn(DL.icons.borrar, 'Eliminar', () => eliminar(m), 'borrar')));
+  }
+
+  DL.views.historial = {
+    titulo: 'Historial de ventas',
+    sub: 'Reportes de ventas en PDF, ordenados por mes y por día de atención: jueves, viernes, sábado y domingo.',
+    acciones(box) {
+      box.append(h('button', { type: 'button', class: 'btn btn-primario', onclick: () => abrirSubida() }, h('span', { html: DL.icons.subir }), 'Subir reportes'));
+    },
+    render(host) {
+      const st = DL.Store.state;
+      const meses = new Map();
+      st.historial.forEach((m) => { const k = key(m); if (!meses.has(k)) meses.set(k, []); meses.get(k).push(m); });
+      const claves = Array.from(meses.keys()).sort((a, b) => b - a);
+      if (!claves.length) {
+        host.append(h('div', { class: 'zona zona-grande', ondragover: (e) => e.preventDefault(), ondrop: (e) => { e.preventDefault(); abrirSubida(e.dataTransfer.files); } },
+          h('span', { html: DL.icons.subir }), h('p', { class: 'vacio-titulo' }, 'Aún no hay reportes'), h('p', { class: 'vacio-texto' }, 'Sube los PDF de tus ventas diarias o semanales y clasifícalos por mes y día de atención.'),
+          h('button', { type: 'button', class: 'btn btn-primario', onclick: () => abrirSubida() }, 'Subir el primer reporte')));
+        return;
+      }
+      if (!local.sel || !meses.has(local.sel.key)) { local.sel = { key: claves[0], dia: null }; local.abiertos.add(claves[0]); }
+
+      // Panel lateral: acordeón de meses
+      const lateral = h('nav', { class: 'meses', 'aria-label': 'Meses con reportes' });
+      claves.forEach((k) => {
+        const items = meses.get(k), abierto = local.abiertos.has(k);
+        const cab = h('button', { type: 'button', class: 'mes-cab' + (local.sel.key === k && !local.sel.dia ? ' activo' : ''), 'aria-expanded': abierto ? 'true' : 'false', onclick: () => {
+          if (local.abiertos.has(k) && local.sel.key === k && !local.sel.dia) local.abiertos.delete(k); else local.abiertos.add(k);
+          local.sel = { key: k, dia: null }; DL.rerender();
+        } }, h('span', { class: 'chev', html: DL.icons.chevron }), h('span', { class: 'mes-nombre' }, keyLabel(k)), h('span', { class: 'contador' }, items.length));
+        const dias = h('ul', { class: 'mes-dias', hidden: !abierto }, DL.DIAS.map((d) => {
+          const n = items.filter((m) => m.dias.includes(d)).length;
+          return h('li', {}, h('button', { type: 'button', class: 'dia' + (local.sel.key === k && local.sel.dia === d ? ' activo' : '') + (n ? '' : ' vacio-dia'), onclick: () => { local.sel = { key: k, dia: d }; DL.rerender(); } }, h('span', {}, d), h('span', { class: 'contador' }, n)));
+        }));
+        lateral.append(h('div', { class: 'mes' }, cab, dias));
+      });
+
+      // Panel principal: archivos del mes o del día
+      const items = meses.get(local.sel.key);
+      const q = E.norm(local.q);
+      const filtra = (arr) => arr.filter((m) => !q || E.norm(m.nombre).includes(q)).sort((a, b) => (a.fecha || a.subido) < (b.fecha || b.subido) ? 1 : -1);
+      const panel = h('section', { class: 'archivos', ondragover: (e) => e.preventDefault(), ondrop: (e) => { e.preventDefault(); abrirSubida(e.dataTransfer.files); } });
+      panel.append(h('header', { class: 'archivos-cab' }, h('h2', {}, keyLabel(local.sel.key) + (local.sel.dia ? ' · ' + local.sel.dia : '')),
+        h('input', { type: 'search', class: 'buscar', placeholder: 'Buscar por nombre', 'aria-label': 'Buscar reporte', value: local.q, oninput: (e) => { local.q = e.target.value; DL.rerender(() => { const i = document.querySelector('.archivos .buscar'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }); } })));
+      const dias = local.sel.dia ? [local.sel.dia] : DL.DIAS;
+      let alguno = false;
+      dias.forEach((d) => {
+        const arr = filtra(items.filter((m) => m.dias.includes(d)));
+        if (!arr.length && !local.sel.dia) return;
+        alguno = alguno || arr.length > 0;
+        if (!local.sel.dia) panel.append(h('h3', { class: 'dia-titulo' }, d, h('span', { class: 'contador' }, arr.length)));
+        if (!arr.length) panel.append(DL.empty('Sin reportes para este día', 'Puedes arrastrar un PDF aquí o usar "Subir reportes".'));
+        else panel.append(h('div', { class: 'archivos-lista' }, arr.map(tarjetaArchivo)));
+      });
+      if (!alguno && !local.sel.dia) panel.append(DL.empty('No hay reportes que coincidan'));
+      host.append(h('div', { class: 'historial' }, lateral, panel));
+    },
+  };
+})();
+
+</script>
+  <script>
+/* Módulo 5: Precios de carta, con costo, utilidad y margen de cada producto */
+(function () {
+  'use strict';
+  const DL = window.DL, h = DL.h, E = window.DLEngine, F = DL.fmt;
+  DL.views = DL.views || {};
+  const local = { fam: '*', q: '', sinPrecio: false };
+
+  const sugerido = (p) => { const obj = DL.Store.state.config.margenObjetivo; if (obj >= 1) return 0; const x = p.costoLlevar / (1 - obj); return Math.ceil(x * 2) / 2; };
+  const priceInput = (pk, label) => DL.numInput({ value: E.precio(pk), label, placeholder: '0.00', onInput: (v) => { DL.Store.state.precios[pk] = v; DL.Store.changed(); } });
+  const byPk = (pk) => E.products().find((p) => p.pk === pk);
+
+  function tablaGenerica(prods) {
+    const body = h('tbody');
+    prods.forEach((p0) => {
+      const P = () => E.productById(p0.id) || p0;
+      const c = (fn, cls) => { const td = h('td', { class: 'num ' + (cls || '') }); DL.bind(td, fn); return td; };
+      body.append(h('tr', { dataset: { q: E.norm(p0.nombre + ' ' + p0.seccion), s: p0.precio ? '1' : '0' } },
+        h('td', {}, h('div', {}, p0.nombre), p0.seccion ? h('div', { class: 'tenue chico' }, p0.seccion) : null),
+        h('td', { class: 'num' }, priceInput(p0.pk, 'Precio de ' + p0.nombre)),
+        c(() => F.money(P().costoLlevar)),
+        c(() => (P().precio ? F.money(P().utilLlevar) : '—')),
+        h('td', { class: 'num' }, DL.badgeMargen(() => P().margenLlevar, () => P().precio)),
+        c(() => F.money(sugerido(P())), 'tenue')));
+    });
+    return h('div', { class: 'tabla-scroll' }, h('table', { class: 'tabla' },
+      h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Producto'), ['Precio de carta', 'Costo para llevar', 'Utilidad', 'Margen', 'Precio sugerido'].map((t) => h('th', { scope: 'col', class: 'num' }, t)))), body));
+  }
+
+  // Cuadrícula sabor × tamaño para pizzas
+  function tablaPizzas() {
+    const P = DL.Store.state.pizzas;
+    const sabores = []; const seen = new Set();
+    P.tamanos.forEach((t) => { const m = P.matrices[t.id + '|unico']; if (m) m.filas.forEach((f) => { if (!seen.has(E.slug(f.s))) { seen.add(E.slug(f.s)); sabores.push(f.s); } }); });
+    const cell = (pk, id) => {
+      const p = E.productById(id); if (!p) return h('td', { class: 'num tenue' }, '—');
+      const bad = DL.badgeMargen(() => (E.productById(id) || p).margenLlevar, () => (E.productById(id) || p).precio);
+      return h('td', { class: 'num celda-precio' }, priceInput(pk, p.nombre), bad);
+    };
+    const body = h('tbody');
+    sabores.forEach((s) => body.append(h('tr', {}, h('th', { scope: 'row' }, s), P.tamanos.map((t) => cell('pz:' + t.id + ':' + E.slug(s), 'pz-' + t.id + '-u-' + E.slug(s))))));
+    body.append(h('tr', { class: 'fila-sep' }, h('th', { scope: 'row' }, 'Dos sabores'), P.tamanos.map((t) => {
+      const m = P.matrices[t.id + '|dos']; if (!m || !m.filas.length) return h('td', { class: 'num tenue' }, '—');
+      const id = 'pz-' + t.id + '-d-' + E.slug(m.filas[0].s);
+      return cell('pzdos:' + t.id, id);
+    })));
+    return h('div', { class: 'tabla-scroll' }, h('table', { class: 'tabla tabla-precios' },
+      h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Sabor'), P.tamanos.map((t) => h('th', { scope: 'col', class: 'num' }, t.nombre)))), body));
+  }
+
+  function tablaPasteles() {
+    const D = window.DILETTO_DATA;
+    const body = h('tbody');
+    Object.keys(D.pasteles).forEach((id) => {
+      const cell = (k) => { const pid = 'pa-' + id + '-' + k; const p = E.productById(pid);
+        return h('td', { class: 'num celda-precio' }, priceInput('pa:' + id + ':' + k, D.pasteles[id].nombre + ' ' + k), DL.badgeMargen(() => E.productById(pid).margenLlevar, () => E.productById(pid).precio)); };
+      body.append(h('tr', {}, h('th', { scope: 'row' }, D.pasteles[id].nombre), cell('entero'), cell('tajada'), cell('mayor')));
+    });
+    return h('div', { class: 'tabla-scroll' }, h('table', { class: 'tabla tabla-precios' },
+      h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Pastel'), ['Entero', 'Tajada', 'Por mayor (c/u, desde 3)'].map((t) => h('th', { scope: 'col', class: 'num' }, t)))), body));
+  }
+
+  DL.views.carta = {
+    titulo: 'Precios de carta',
+    sub: 'Precio de venta de cada producto con su utilidad y margen. Estos precios alimentan el módulo de Ventas.',
+    render(host) {
+      const st = DL.Store.state;
+      host.append(DL.famPills({ active: local.fam, todos: true, onPick: (id) => { local.fam = id; DL.rerender(); } }));
+      const obj = DL.numInput({ value: st.config.margenObjetivo * 100, label: 'Margen objetivo en porcentaje', placeholder: '50', onInput: (v) => { st.config.margenObjetivo = Math.min(95, Math.max(0, v)) / 100; DL.Store.changed(); } });
+      host.append(h('div', { class: 'barra' },
+        h('input', { type: 'search', class: 'buscar', placeholder: 'Buscar producto', 'aria-label': 'Buscar producto', value: local.q, oninput: (e) => { local.q = e.target.value; filtrar(); } }),
+        h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: local.sinPrecio, onchange: (e) => { local.sinPrecio = e.target.checked; filtrar(); } }), 'Solo sin precio'),
+        h('span', { class: 'espacio' }),
+        h('label', { class: 'rinde' }, 'Margen objetivo', obj, h('span', { class: 'sufijo' }, '%'))));
+      const grupos = window.DILETTO_DATA.grupos;
+      const fams = window.DILETTO_DATA.familias.filter((f) => local.fam === '*' || f.id === local.fam);
+      const secciones = [];
+      grupos.forEach((g) => fams.filter((f) => f.grupo === g).forEach((f) => {
+        const prods = E.products().filter((p) => p.fam === f.id);
+        if (!prods.length) return;
+        let cuerpo;
+        if (f.id === 'pizzas') cuerpo = h('div', {}, tablaPizzas(), h('h3', { class: 'subtitulo' }, 'Por tajada'), tablaGenerica(prods.filter((p) => p.seccion === 'Por tajada')));
+        else if (f.id === 'pasteles') cuerpo = tablaPasteles();
+        else cuerpo = tablaGenerica(prods);
+        const sec = h('section', { class: 'tarjeta', dataset: { fam: f.id } }, h('header', { class: 'tarjeta-cab' }, h('h2', {}, f.nombre), h('p', { class: 'tenue' }, g)), cuerpo);
+        secciones.push(sec); host.append(sec);
+      }));
+      if (!secciones.length) host.append(DL.empty('No hay productos en esta categoría'));
+      host.append(h('p', { class: 'nota' }, 'El margen es (precio − costo para llevar) ÷ precio. El precio sugerido redondea hacia arriba al medio sol para alcanzar el margen objetivo. No incluye costos indirectos.'));
+      function filtrar() {
+        const q = E.norm(local.q);
+        host.querySelectorAll('tbody tr[data-q]').forEach((tr) => { tr.hidden = !((!q || tr.dataset.q.includes(q)) && (!local.sinPrecio || tr.dataset.s === '0')); });
+      }
+      filtrar();
+    },
+  };
+})();
+
+</script>
+  <script>
+/* Arranque: navegación de 5 secciones, cabecera, respaldo y transición entre vistas. */
+(function () {
+  'use strict';
+  const DL = window.DL, h = DL.h;
+  const NAV = [
+    { id: 'abarrotes', label: 'Abarrotes y materiales', icon: 'abarrotes' },
+    { id: 'produccion', label: 'Costo de producción', icon: 'produccion' },
+    { id: 'ventas', label: 'Ventas', icon: 'ventas' },
+    { id: 'historial', label: 'Historial de ventas', icon: 'historial' },
+    { id: 'carta', label: 'Precios de carta', icon: 'carta' },
+  ];
+  let current = null;
+
+  function renderMenu() {
+    const menu = document.getElementById('menu'); DL.clear(menu);
+    NAV.forEach((n) => menu.append(h('button', { type: 'button', class: 'menu-item' + (n.id === current ? ' activo' : ''), 'aria-current': n.id === current ? 'page' : null, onclick: () => DL.go(n.id) },
+      h('span', { class: 'menu-ico', html: DL.icons[n.icon] }), h('span', { class: 'menu-txt' }, n.label))));
+  }
+
+  function draw(keepScroll) {
+    const view = DL.views[current];
+    const host = document.getElementById('vista');
+    const y = window.scrollY;
+    if (keepScroll) host.classList.remove('entra');
+    DL.resetBinds(); DL.clear(host);
+    document.getElementById('tituloVista').textContent = view.titulo;
+    document.getElementById('subVista').textContent = view.sub;
+    const acc = DL.clear(document.getElementById('accionesVista'));
+    if (view.acciones) view.acciones(acc);
+    try { view.render(host); } catch (e) { console.error(e); host.append(DL.empty('No se pudo mostrar esta sección', 'Recarga la página. Si el problema continúa, exporta un respaldo y restablece los datos.')); }
+    DL.refresh();
+    if (keepScroll) window.scrollTo(0, y);
+  }
+
+  // Cambia de sección con una transición suave
+  DL.go = (id) => {
+    if (!DL.views[id]) id = 'ventas';
+    const host = document.getElementById('vista');
+    const cambio = id !== current;
+    current = id; DL.Store.state.ui.view = id;
+    try { history.replaceState(null, '', '#' + id); } catch (e) { /* file:// */ }
+    renderMenu();
+    if (!cambio) return draw(true);
+    host.classList.remove('entra'); void host.offsetWidth;
+    draw(false); window.scrollTo(0, 0);
+    host.classList.add('entra'); host.focus({ preventScroll: true });
+    DL.Store.save();
+  };
+  DL.rerender = (after) => { draw(true); if (after) after(); };
+
+  DL.setSaved = (ok) => {
+    const el = document.getElementById('estadoGuardado'); if (!el) return;
+    if (ok === null) { el.textContent = 'Guardando…'; el.className = 'estado'; return; }
+    el.textContent = ok ? 'Guardado en este navegador' : 'No se pudo guardar. Exporta un respaldo.';
+    el.className = 'estado' + (ok ? '' : ' error');
+  };
+
+  /* Menú de respaldo */
+  function setupBackup() {
+    const btn = document.getElementById('btnRespaldo'), menu = document.getElementById('menuRespaldo');
+    const file = document.getElementById('archivoRespaldo');
+    const close = () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+    btn.addEventListener('click', (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; btn.setAttribute('aria-expanded', String(!menu.hidden)); });
+    document.addEventListener('click', (e) => { if (!menu.contains(e.target)) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+    menu.querySelector('[data-a="exportar"]').addEventListener('click', async () => {
+      close();
+      try {
+        const data = await DL.Store.exportBackup();
+        const hoy = DL.isoToday();
+        DL.Store.download('diletto-respaldo-' + hoy + '.json', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+        DL.toast('Respaldo exportado.');
+      } catch (e) { console.error(e); DL.toast('No se pudo exportar el respaldo.', 'error'); }
+    });
+    menu.querySelector('[data-a="importar"]').addEventListener('click', () => { close(); file.click(); });
+    file.addEventListener('change', async () => {
+      const f = file.files[0]; file.value = ''; if (!f) return;
+      if (!(await DL.confirm({ titulo: 'Importar respaldo', mensaje: 'Reemplaza todos los datos actuales por los del archivo, incluidos los PDF.', ok: 'Importar', peligro: true }))) return;
+      try { await DL.Store.importBackup(JSON.parse(await f.text())); DL.go(DL.Store.state.ui.view || 'ventas'); DL.toast('Respaldo importado.'); }
+      catch (e) { console.error(e); DL.toast(e.message || 'El archivo no es válido.', 'error'); }
+    });
+    menu.querySelector('[data-a="restablecer"]').addEventListener('click', async () => {
+      close();
+      if (!(await DL.confirm({ titulo: 'Restablecer datos del Excel', mensaje: 'Vuelven los insumos, recetas y precios originales. Se conservan tus ventas, cierres y PDF.', ok: 'Restablecer', peligro: true }))) return;
+      DL.Store.resetCatalog(); DL.rerender(); DL.toast('Datos restablecidos.');
+    });
+  }
+
+  function start() {
+    DL.Store.load();
+    const hash = (location.hash || '').replace('#', '');
+    current = DL.views[hash] ? hash : (DL.views[DL.Store.state.ui.view] ? DL.Store.state.ui.view : 'ventas');
+    renderMenu(); setupBackup(); draw(false);
+    document.getElementById('vista').classList.add('entra');
+    window.addEventListener('hashchange', () => { const id = location.hash.replace('#', ''); if (DL.views[id] && id !== current) DL.go(id); });
+    if (!DL.Store.persistOK) DL.toast('Tu navegador bloquea el almacenamiento: los cambios no se guardarán.', 'error');
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
+</script>
+  <script>document.getElementById('btnRespaldo').innerHTML = window.DL.icons.mas_opciones;</script>
+</body>
+</html>
