@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Diletto Artesanal · Gestión interna</title>
+  <meta name="description" content="Panel de gestión interna de Diletto Artesanal: abarrotes, costos de producción, ventas, historial y precios de carta.">
+  <meta name="theme-color" content="#173F33">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23173F33'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='21' font-style='italic' text-anchor='middle' fill='%23fff'%3ED%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="salto" href="#vista">Saltar al contenido</a>
+  <div class="app">
+    <aside class="lateral">
+      <div class="marca" aria-label="Diletto Artesanal">
+        <span class="marca-nombre">Diletto</span>
+        <span class="marca-sub">Artesanal</span>
+      </div>
+      <nav class="menu" id="menu" aria-label="Secciones"></nav>
+      <p class="lateral-pie estado" id="estadoGuardado">Guardado en este navegador</p>
+    </aside>
+
+    <div class="principal">
+      <header class="cabecera">
+        <div class="cabecera-titulo">
+          <h1 id="tituloVista"></h1>
+          <p id="subVista"></p>
+        </div>
+        <div class="cabecera-acciones">
+          <div id="accionesVista" class="acciones-vista"></div>
+          <div class="respaldo">
+            <button type="button" id="btnRespaldo" class="btn-icono" aria-haspopup="menu" aria-expanded="false" aria-label="Respaldo y datos" title="Respaldo y datos"></button>
+            <div id="menuRespaldo" class="popover" role="menu" hidden>
+              <button type="button" role="menuitem" data-a="exportar">Exportar respaldo</button>
+              <button type="button" role="menuitem" data-a="importar">Importar respaldo</button>
+              <button type="button" role="menuitem" data-a="restablecer" class="peligro">Restablecer datos del Excel</button>
+            </div>
+            <input type="file" id="archivoRespaldo" accept="application/json,.json" class="oculto">
+          </div>
+        </div>
+      </header>
+      <main id="vista" class="vista" tabindex="-1"></main>
+    </div>
+  </div>
+  <div id="toasts" class="avisos" aria-live="polite"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/views/abarrotes.js"></script>
+  <script src="js/views/produccion.js"></script>
+  <script src="js/views/ventas.js"></script>
+  <script src="js/views/historial.js"></script>
+  <script src="js/views/carta.js"></script>
+  <script src="js/app.js"></script>
+  <script>document.getElementById('btnRespaldo').innerHTML = window.DL.icons.mas_opciones;</script>
+</body>
+</html>
